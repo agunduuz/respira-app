@@ -110,19 +110,20 @@ Prisma şema detayları için: `02-VERI-MODELI-VE-GUVENLIK.md`
 DATABASE_URL="postgresql://...supabase-connection-string..."
 DIRECT_URL="postgresql://...supabase-direct-connection..."
 SUPABASE_URL="https://xxxx.supabase.co"
-SUPABASE_ANON_KEY="..."
-SUPABASE_SERVICE_ROLE_KEY="..."   # sadece backend'de, asla mobile'a gömülmez
-JWT_SECRET="..."
+SUPABASE_PUBLISHABLE_KEY="sb_publishable_..."
+SUPABASE_SECRET_KEY="sb_secret_..."   # sadece backend'de, asla mobile'a gömülmez
 ```
 
 `apps/mobile/.env`:
 ```
 EXPO_PUBLIC_API_URL="http://localhost:3000"
 EXPO_PUBLIC_SUPABASE_URL="https://xxxx.supabase.co"
-EXPO_PUBLIC_SUPABASE_ANON_KEY="..."
+EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY="sb_publishable_..."
 ```
 
-> Güvenlik notu: `SERVICE_ROLE_KEY` gibi yüksek yetkili anahtarlar **asla** mobil uygulama koduna girmemeli — sadece backend'de kalır. Detay: `02-VERI-MODELI-VE-GUVENLIK.md`
+> Güvenlik notu: `SECRET_KEY` gibi yüksek yetkili anahtarlar **asla** mobil uygulama koduna girmemeli — sadece backend'de kalır. Detay: `02-VERI-MODELI-VE-GUVENLIK.md`
+>
+> Supabase 2026 sonunda eski `anon`/`service_role` (JWT tabanlı) anahtar sistemini tamamen kaldırıyor; bu yüzden yeni projelerde doğrudan `publishable`/`secret` anahtarları (`sb_publishable_...` / `sb_secret_...`) kullanılmalı. Bu değerleri Supabase panelinde **Project Settings → API Keys → Publishable and secret API keys** sekmesinden alabilirsin.
 
 ### 7. Turborepo Script'leri
 

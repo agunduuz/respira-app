@@ -28,7 +28,7 @@ export async function requireUser(request: Request): Promise<AuthedUser> {
     throw new UnauthorizedError("Authorization header eksik");
   }
 
-  const supabase = createClient(env.supabaseUrl, env.supabaseAnonKey, {
+  const supabase = createClient(env.supabaseUrl, env.supabasePublishableKey, {
     auth: { autoRefreshToken: false, persistSession: false },
   });
 

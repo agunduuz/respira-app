@@ -1,0 +1,32 @@
+# bağımlılıklar
+node_modules/
+.pnpm-store/
+
+# build çıktıları
+dist/
+build/
+.next/
+.expo/
+.turbo/
+*.tsbuildinfo
+
+# ortam değişkenleri (asla commit edilmez)
+.env
+.env.local
+.env.*.local
+
+# native build
+apps/mobile/ios/
+apps/mobile/android/
+
+# prisma
+packages/database/generated/
+
+# editör / OS
+.DS_Store
+.vscode/
+.idea/
+
+# loglar
+*.log
+npm-debug.log*

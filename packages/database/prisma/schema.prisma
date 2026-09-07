@@ -1,0 +1,112 @@
+// Respira — çekirdek veri modeli
+// Kaynak: docs/02-VERI-MODELI-VE-GUVENLIK.md
+//
+// Özelliklere ait modeller (EyeStrainSettings, NutritionProfile, MealEntry,
+// PostureProfile, WaterGoal, StressProfile ...) ilgili özellik dosyalarında
+// (docs/03-... — docs/07-...) tanımlı. O özellik geliştirilirken hem modeli
+// hem de aşağıdaki User modelindeki yorum satırına alınmış ilişkiyi aç.
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// ---------- ÇEKİRDEK ----------
+
+model User {
+  id        String   @id @default(uuid())
+  authId    String   @unique // Supabase auth.users.id ile eşleşir
+  email     String?  @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  consents          ConsentRecord[]
+  notificationPrefs NotificationPreference[]
+  dailyReports      DailyReport[]
+
+  // --- Özellik ilişkileri (ilgili özellik geliştirilince açılacak) ---
+  // eyeStrainSettings EyeStrainSettings?      // docs/03
+  // eyeStrainSessions EyeStrainSession[]      // docs/03
+  // nutritionProfile  NutritionProfile?       // docs/04
+  // mealEntries       MealEntry[]             // docs/04
+  // dailyNutrition    DailyNutritionSummary[] // docs/04
+  // postureProfile    PostureProfile?         // docs/05
+  // postureBreakLogs  PostureBreakLog[]       // docs/05
+  // waterGoal         WaterGoal?              // docs/06
+  // waterLogs         WaterIntakeLog[]        // docs/06
+  // stressProfile     StressProfile?          // docs/07
+  // breathingSessions BreathingSession[]      // docs/07
+
+  @@map("users")
+}
+
+// KVKK: her açık rıza kaydı ayrı bir satır — hangi metne, ne zaman, hangi
+// sürüme onay verildiği kanıtlanabilir olmalı (KVKK md. 6, açık rıza ispatı)
+model ConsentRecord {
+  id          String      @id @default(uuid())
+  userId      String
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  consentType ConsentType
+  textVersion String // örn. "aydinlatma-v1.2"
+  grantedAt   DateTime    @default(now())
+  revokedAt   DateTime?
+
+  @@index([userId, consentType])
+  @@map("consent_records")
+}
+
+enum ConsentType {
+  AYDINLATMA_METNI // genel KVKK aydınlatma
+  OZEL_NITELIKLI_VERI_RIZASI // sağlık verisi işleme açık rızası
+  BILDIRIM_IZNI_GOZ
+  BILDIRIM_IZNI_OGUN
+  BILDIRIM_IZNI_KAN_TAHLILI
+  BILDIRIM_IZNI_POSTUR
+  BILDIRIM_IZNI_SU
+  BILDIRIM_IZNI_STRES
+}
+
+model NotificationPreference {
+  id               String   @id @default(uuid())
+  userId           String
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category         String // "eye_strain" | "water" | "posture" | "stress" | "blood_test"
+  enabled          Boolean  @default(false)
+  frequencyMinutes Int?
+  quietHoursStart  String? // "22:00"
+  quietHoursEnd    String? // "08:00"
+  updatedAt        DateTime @updatedAt
+
+  @@unique([userId, category])
+  @@map("notification_preferences")
+}
+
+// Tüm özelliklerin günlük özetini tek yerde toplayan çapraz-özellik tablo
+model DailyReport {
+  id         String   @id @default(uuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date       DateTime @db.Date
+  isFavorite Boolean  @default(false)
+
+  // isFavorite=false ise, ilgili günün ham içerik detayları (öğün metinleri vb.)
+  // periyodik bir temizlik işiyle silinir; sadece bu tablodaki özet metrikler kalır.
+  eyeStrainComplianceRate Float?
+  totalWaterMl            Int?
+  totalCalories           Int?
+  totalProteinG           Float?
+  totalCarbsG             Float?
+  totalFatG               Float?
+  postureBreaksTaken      Int?
+  stressSessionsCompleted Int?
+
+  createdAt DateTime @default(now())
+
+  @@unique([userId, date])
+  @@map("daily_reports")
+}

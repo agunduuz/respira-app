@@ -1,0 +1,19 @@
+packages:
+  - "apps/*"
+  - "packages/*"
+
+# React Native / Expo, pnpm'in sembolik-link tabanlı (isolated) node_modules
+# yapısıyla uyumlu değil — Metro bundler linkleri çözemiyor. npm/yarn benzeri
+# düz (hoisted) bir node_modules kullanıyoruz.
+nodeLinker: hoisted
+
+# Kurulum sırasında postinstall script'i çalıştırmasına izin verilen paketler
+# (pnpm varsayılan olarak hepsini bloke eder).
+allowBuilds:
+  "@prisma/client": true
+  "@prisma/engines": true
+  "@shopify/react-native-skia": true
+  prisma: true
+  esbuild: true
+  sharp: false
+  unrs-resolver: false

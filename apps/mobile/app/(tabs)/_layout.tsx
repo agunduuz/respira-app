@@ -1,68 +1,43 @@
-import { SymbolView } from 'expo-symbols';
-import { Link, Tabs } from 'expo-router';
-import { Platform, Pressable } from 'react-native';
+import { Tabs } from "expo-router";
+import { Eye, Wind } from "lucide-react-native";
 
-import Colors from '@/constants/Colors';
-import { useColorScheme } from '@/components/useColorScheme';
-import { useClientOnlyValue } from '@/components/useClientOnlyValue';
+import { useThemeStore } from "@/theme/theme-store";
+import { darkPalette, lightPalette, touchTarget } from "@/theme/tokens";
 
 export default function TabLayout() {
-  const colorScheme = useColorScheme();
+  const preference = useThemeStore((s) => s.preference);
+  const palette = preference === "light" ? lightPalette : darkPalette;
+  const rgb = (c: string) => `rgb(${c.split(" ").join(", ")})`;
 
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme].tint,
-        // Disable the static render of the header on web
-        // to prevent a hydration error in React Navigation v6.
-        headerShown: useClientOnlyValue(false, true),
-      }}>
+        tabBarActiveTintColor: rgb(palette.accent),
+        tabBarInactiveTintColor: rgb(palette.textMuted),
+        tabBarStyle: {
+          backgroundColor: rgb(palette.surface),
+          borderTopColor: rgb(palette.border),
+          // Sekme öğeleri en az 48dp yüksekliğinde kalsın.
+          minHeight: touchTarget.min,
+        },
+        tabBarLabelStyle: { fontFamily: "Inter_500Medium", fontSize: 12 },
+        headerShown: false,
+      }}
+    >
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Tab One',
-          tabBarIcon: ({ color }) => (
-            <SymbolView
-              name={{
-                ios: 'chevron.left.forwardslash.chevron.right',
-                android: 'code',
-                web: 'code',
-              }}
-              tintColor={color}
-              size={28}
-            />
-          ),
-          headerRight: () => (
-            <Link href="/modal" asChild>
-              <Pressable style={{ marginRight: 15 }}>
-                {({ pressed }) => (
-                  <SymbolView
-                    name={{ ios: 'info.circle', android: 'info', web: 'info' }}
-                    size={25}
-                    tintColor={Colors[colorScheme].text}
-                    style={{ opacity: pressed ? 0.5 : 1 }}
-                  />
-                )}
-              </Pressable>
-            </Link>
-          ),
+          title: "Bugün",
+          // Dekoratif değil — sekmenin anlamını taşıyor, ama görünür etiket
+          // zaten var, o yüzden ikon erişilebilirlik ağacından gizleniyor.
+          tabBarIcon: ({ color }) => <Eye size={24} strokeWidth={1.75} color={color} />,
         }}
       />
       <Tabs.Screen
         name="two"
         options={{
-          title: 'Tab Two',
-          tabBarIcon: ({ color }) => (
-            <SymbolView
-              name={{
-                ios: 'chevron.left.forwardslash.chevron.right',
-                android: 'code',
-                web: 'code',
-              }}
-              tintColor={color}
-              size={28}
-            />
-          ),
+          title: "Nefes",
+          tabBarIcon: ({ color }) => <Wind size={24} strokeWidth={1.75} color={color} />,
         }}
       />
     </Tabs>

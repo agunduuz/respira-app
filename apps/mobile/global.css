@@ -1,3 +1,47 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/**
+ * Semantik renk token'ları. Değerler theme/tokens.ts ile birebir aynı olmalı —
+ * orası kaynak, burası NativeWind'in okuduğu kopya.
+ *
+ * Kanallar boşluklu RGB olarak duruyor ki Tailwind `<alpha-value>` ile opaklık
+ * uygulayabilsin (örn. bg-accent/20).
+ *
+ * :root = AÇIK tema. .dark:root = KOYU tema.
+ * Uygulama varsayılanı koyu; bu seçim theme/theme-store.ts içinde yapılıyor.
+ */
+@layer base {
+  :root {
+    --bg: 242 246 241;
+    --surface: 255 255 255;
+    --elevated: 255 255 255;
+    --border: 220 229 219;
+    --border-strong: 121 139 127;
+    --text: 15 23 18;
+    --text-muted: 79 97 87;
+    --accent: 11 107 73;
+    --on-accent: 255 255 255;
+    --warm: 138 75 18;
+    --on-warm: 255 255 255;
+    --danger: 164 35 28;
+    --on-danger: 255 255 255;
+  }
+
+  .dark:root {
+    --bg: 15 23 18;
+    --surface: 26 38 32;
+    --elevated: 34 50 42;
+    --border: 44 61 52;
+    --border-strong: 90 104 95;
+    --text: 243 246 244;
+    --text-muted: 157 176 164;
+    --accent: 124 224 184;
+    --on-accent: 5 35 26;
+    --warm: 232 161 92;
+    --on-warm: 36 21 5;
+    --danger: 255 138 138;
+    --on-danger: 42 8 8;
+  }
+}

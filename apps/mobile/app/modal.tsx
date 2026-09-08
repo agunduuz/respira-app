@@ -1,35 +1,22 @@
-import { StatusBar } from 'expo-status-bar';
-import { Platform, StyleSheet } from 'react-native';
+import { ScrollView } from "react-native";
 
-import EditScreenInfo from '@/components/EditScreenInfo';
-import { Text, View } from '@/components/Themed';
+import { Card, Screen, Text } from "@/components/ui";
 
 export default function ModalScreen() {
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Modal</Text>
-      <View style={styles.separator} lightColor="#eee" darkColor="rgba(255,255,255,0.1)" />
-      <EditScreenInfo path="app/modal.tsx" />
-
-      {/* Use a light status bar on iOS to account for the black space above the modal */}
-      <StatusBar style={Platform.OS === 'ios' ? 'light' : 'auto'} />
-    </View>
+    <Screen edges={["bottom"]}>
+      <ScrollView contentContainerClassName="gap-4 p-4">
+        <Text variant="title">Respira hakkında</Text>
+        <Card className="gap-2">
+          <Text variant="body">
+            Respira bir takip aracıdır; tanı koymaz, tedavi önermez.
+          </Text>
+          <Text variant="bodySm" muted>
+            Sağlık verilerin cihazında ve hesabına bağlı olarak saklanır.
+            Ayarlardan dilediğin zaman dışa aktarabilir veya silebilirsin.
+          </Text>
+        </Card>
+      </ScrollView>
+    </Screen>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: 'bold',
-  },
-  separator: {
-    marginVertical: 30,
-    height: 1,
-    width: '80%',
-  },
-});

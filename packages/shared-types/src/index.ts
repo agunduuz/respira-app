@@ -2,4 +2,7 @@ export * from "./consent";
 export * from "./daily-report";
 export * from "./eye-strain";
 export * from "./notification";
+export * from "./nutrition";
+export * from "./nutrition-advice";
+export * from "./nutrition-math";
 export * from "./user";

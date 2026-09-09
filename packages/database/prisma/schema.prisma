@@ -32,10 +32,11 @@ model User {
   eyeStrainSettings EyeStrainSettings?
   eyeStrainSessions EyeStrainSession[]
 
+  nutritionProfile NutritionProfile?
+  mealEntries      MealEntry[]
+  dailyNutrition   DailyNutritionSummary[]
+
   // --- Özellik ilişkileri (ilgili özellik geliştirilince açılacak) ---
-  // nutritionProfile  NutritionProfile?       // docs/04
-  // mealEntries       MealEntry[]             // docs/04
-  // dailyNutrition    DailyNutritionSummary[] // docs/04
   // postureProfile    PostureProfile?         // docs/05
   // postureBreakLogs  PostureBreakLog[]       // docs/05
   // waterGoal         WaterGoal?              // docs/06
@@ -145,4 +146,118 @@ enum EyeStrainStatus {
   COMPLETED
   SKIPPED
   MISSED // bildirime hiç yanıt verilmedi
+}
+
+// ---------- BESLENME / KAN ŞEKERİ (docs/04) ----------
+
+model NutritionProfile {
+  id     String @id @default(uuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Adım 1 — öğün düzeni
+  mealsPerDay Int
+  mealTimes   Json? // [{ label: "Kahvaltı", time: "08:00" }, ...]
+
+  // Adım 2 — fiziksel profil
+  age               Int
+  heightCm          Float
+  weightKg          Float
+  // Mifflin-St Jeor sabiti cinsiyete göre değişiyor (E +5 / K −161).
+  // Opsiyonel: belirtilmezse iki sabitin ortalaması kullanılır (bkz.
+  // packages/shared-types/src/nutrition-math.ts).
+  biologicalSex     BiologicalSex?
+  trainingFrequency TrainingFrequency
+  trainingType      String
+  bodyGoal          BodyGoal
+  bodyFatPercent    Float?
+  measurements      Json? // { neck, arm, waist, hip }
+
+  // Adım 3 — makro hedefleri
+  targetCalories   Int
+  targetProteinG   Float
+  targetCarbsG     Float
+  targetFatG       Float
+  // Kullanıcı önerilen değerleri elle değiştirdiyse true; profil verisi
+  // değişse bile hedefleri sessizce ezmemek için buna bakılır.
+  macrosCustomized Boolean @default(false)
+
+  // Adım 4 — sağlık bilgileri (hepsi opsiyonel, KVKK veri asgarileştirmesi)
+  bloodType               String?
+  sugarNeedRate           String?
+  lastBloodTestDate       DateTime?
+  bloodTestReminderMonths Int?
+
+  updatedAt DateTime @updatedAt
+
+  @@map("nutrition_profiles")
+}
+
+enum BiologicalSex {
+  MALE
+  FEMALE
+}
+
+enum TrainingFrequency {
+  NEVER
+  ONE_TO_TWO
+  TWO_TO_THREE
+  FOUR_TO_FIVE
+  DAILY
+}
+
+enum BodyGoal {
+  ATHLETIC
+  MUSCLE_GAIN
+  WEIGHT_LOSS
+  MAINTENANCE
+  FAT_LOSS
+}
+
+model MealEntry {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date      DateTime @db.Date
+  mealLabel String // "Kahvaltı", "Öğle", vb.
+  mode      MealMode
+
+  // SIMPLE modda yalnızca rawText dolu; DETAILED modda foodItemsDetail ve
+  // sayısal alanlar da dolu olur. docs/04: basit modda besin değeri hesabı
+  // YAPILMAZ — bu yüzden sayısal alanlar nullable.
+  rawText         String?
+  foodItemsDetail Json? // [{ name, amount, unit, calories, protein, carbs, fat, fiber }]
+  calories        Int?
+  proteinG        Float?
+  carbsG          Float?
+  fatG            Float?
+  fiberG          Float?
+
+  // docs/02 saklama kuralı: favori olmayan kayıtların ham içeriği (rawText,
+  // foodItemsDetail) süre sonunda temizlenir; sayısal metrikler kalır.
+  isFavorite Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  @@index([userId, date])
+  @@map("meal_entries")
+}
+
+enum MealMode {
+  SIMPLE
+  DETAILED
+}
+
+model DailyNutritionSummary {
+  id            String   @id @default(uuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date          DateTime @db.Date
+  totalCalories Int
+  totalProteinG Float
+  totalCarbsG   Float
+  totalFatG     Float
+  totalFiberG   Float
+
+  @@unique([userId, date])
+  @@map("daily_nutrition_summaries")
 }

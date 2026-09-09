@@ -20,6 +20,7 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { AuthGate } from "@/components/AuthGate";
 import { initAuth } from "@/lib/auth-store";
+import { loadSkia } from "@/lib/skia-loader";
 import { initTheme, useThemeStore } from "@/theme/theme-store";
 import { darkPalette, lightPalette } from "@/theme/tokens";
 
@@ -39,6 +40,20 @@ SplashScreen.preventAutoHideAsync();
 initTheme();
 
 export default function RootLayout() {
+  // Web'de Skia (CanvasKit WASM) çizimden önce yüklenmeli; native'de anında geçer.
+  const [skiaReady, setSkiaReady] = useState(false);
+  useEffect(() => {
+    loadSkia().then(
+      () => setSkiaReady(true),
+      // Yükleme başarısız olursa uygulamayı kilitleme: Skia'sız da açılsın,
+      // yalnızca Canvas kullanan bileşenler boş kalır.
+      (err) => {
+        console.error("[respira] Skia yüklenemedi:", err);
+        setSkiaReady(true);
+      }
+    );
+  }, []);
+
   const [loaded, error] = useFonts({
     SpaceGrotesk_600SemiBold,
     SpaceGrotesk_700Bold,
@@ -61,7 +76,7 @@ export default function RootLayout() {
   // Kayıtlı oturumu expo-secure-store'dan oku ve değişiklikleri dinle.
   useEffect(() => initAuth(), []);
 
-  if (!loaded) {
+  if (!loaded || !skiaReady) {
     return null;
   }
 
@@ -122,6 +137,10 @@ function RootLayoutNav() {
                 <Stack.Screen
                   name="modal"
                   options={{ presentation: "modal", title: "Hakkında" }}
+                />
+                <Stack.Screen
+                  name="eye-strain-settings"
+                  options={{ presentation: "modal", title: "Göz molası ayarları" }}
                 />
               </Stack>
             </AuthGate>

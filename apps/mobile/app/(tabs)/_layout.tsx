@@ -1,5 +1,5 @@
 import { Tabs } from "expo-router";
-import { Eye, Settings, Wind } from "lucide-react-native";
+import { ChartColumn, Eye, Settings, Wind } from "lucide-react-native";
 
 import { useThemeStore } from "@/theme/theme-store";
 import { darkPalette, lightPalette, touchTarget } from "@/theme/tokens";
@@ -27,7 +27,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: "Bugün",
+          title: "Göz",
           // Dekoratif değil — sekmenin anlamını taşıyor, ama görünür etiket
           // zaten var, o yüzden ikon erişilebilirlik ağacından gizleniyor.
           tabBarIcon: ({ color }) => <Eye size={24} strokeWidth={1.75} color={color} />,
@@ -38,6 +38,13 @@ export default function TabLayout() {
         options={{
           title: "Nefes",
           tabBarIcon: ({ color }) => <Wind size={24} strokeWidth={1.75} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="eye-analysis"
+        options={{
+          title: "Analiz",
+          tabBarIcon: ({ color }) => <ChartColumn size={24} strokeWidth={1.75} color={color} />,
         }}
       />
       <Tabs.Screen

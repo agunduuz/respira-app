@@ -7,6 +7,7 @@
     "@expo-google-fonts/inter": "^0.4.2",
     "@expo-google-fonts/space-grotesk": "^0.4.1",
     "@hookform/resolvers": "^5.9.1",
+    "@react-native-async-storage/async-storage": "2.2.0",
     "@respira/shared-types": "workspace:*",
     "@shopify/react-native-skia": "2.6.2",
     "@supabase/supabase-js": "^2.115.0",
@@ -45,6 +46,7 @@
     "zustand": "^5.0.15"
   },
   "devDependencies": {
+    "@types/node": "^22.20.1",
     "@types/react": "~19.2.2",
     "prettier-plugin-tailwindcss": "^0.8.1",
     "tailwindcss": "^3.4.19",
@@ -62,7 +64,8 @@
     "build:dev": "eas build --profile development",
     "build:preview": "eas build --profile preview",
     "build:prod": "eas build --profile production",
-    "submit": "eas submit --profile production"
+    "submit": "eas submit --profile production",
+    "test": "node --test --experimental-strip-types \"lib/**/*.test.ts\""
   },
   "private": true
 }

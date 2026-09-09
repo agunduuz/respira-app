@@ -1,5 +1,5 @@
-import { Canvas, Circle, Group, RadialGradient, vec } from "@shopify/react-native-skia";
 import { useEffect } from "react";
+import { View } from "react-native";
 import {
   Easing,
   useDerivedValue,
@@ -9,7 +9,13 @@ import {
   withTiming,
 } from "react-native-reanimated";
 
+import { isSkiaUsable } from "@/lib/skia-available";
 import { useMotion } from "@/theme/use-motion";
+
+// Statik import, Skia'sız platformlarda ekranı düşürüyor — bkz. ProgressRing.
+const skia = isSkiaUsable()
+  ? (require("@shopify/react-native-skia") as typeof import("@shopify/react-native-skia"))
+  : null;
 
 const SIZE = 260;
 const CENTER = SIZE / 2;
@@ -54,6 +60,12 @@ export function BreathingOrb({ inhaleMs = 4000, accent, surface }: Props) {
   // Dış hale içteki daireden biraz gecikmeli genişliyor — organik his verir.
   const haloRadius = useDerivedValue(() => radius.value + 18 + 10 * progress.value);
   const haloOpacity = useDerivedValue(() => 0.10 + 0.16 * progress.value);
+
+  if (!skia) {
+    return <View style={{ width: SIZE, height: SIZE }} />;
+  }
+
+  const { Canvas, Circle, Group, RadialGradient, vec } = skia;
 
   return (
     <Canvas style={{ width: SIZE, height: SIZE }}>

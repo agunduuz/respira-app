@@ -29,9 +29,10 @@ model User {
   notificationPrefs NotificationPreference[]
   dailyReports      DailyReport[]
 
+  eyeStrainSettings EyeStrainSettings?
+  eyeStrainSessions EyeStrainSession[]
+
   // --- Özellik ilişkileri (ilgili özellik geliştirilince açılacak) ---
-  // eyeStrainSettings EyeStrainSettings?      // docs/03
-  // eyeStrainSessions EyeStrainSession[]      // docs/03
   // nutritionProfile  NutritionProfile?       // docs/04
   // mealEntries       MealEntry[]             // docs/04
   // dailyNutrition    DailyNutritionSummary[] // docs/04
@@ -109,4 +110,39 @@ model DailyReport {
 
   @@unique([userId, date])
   @@map("daily_reports")
+}
+
+// ---------- GÖZ YORGUNLUĞU (docs/03) ----------
+
+model EyeStrainSettings {
+  id              String   @id @default(uuid())
+  userId          String   @unique
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  intervalMinutes Int      @default(20)
+  breakSeconds    Int      @default(20)
+  updatedAt       DateTime @updatedAt
+
+  @@map("eye_strain_settings")
+}
+
+model EyeStrainSession {
+  id          String          @id @default(uuid())
+  userId      String
+  user        User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  triggeredAt DateTime        @default(now())
+  status      EyeStrainStatus
+
+  // Ağ tekrarı aynı molayı iki kez yazmasın: iki gerçek mola aynı milisaniyede
+  // tetiklenemez, bu yüzden kısıt güvenli ve gönderimi idempotent yapıyor.
+  @@unique([userId, triggeredAt])
+  // Analiz sorguları hep "bu kullanıcının şu tarih aralığındaki seansları"
+  // şeklinde — bileşik indeks bunu karşılıyor.
+  @@index([userId, triggeredAt])
+  @@map("eye_strain_sessions")
+}
+
+enum EyeStrainStatus {
+  COMPLETED
+  SKIPPED
+  MISSED // bildirime hiç yanıt verilmedi
 }

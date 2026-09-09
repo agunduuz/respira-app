@@ -73,3 +73,15 @@ pnpm --filter mobile submit
 - **Gizli anahtarlar** — `EXPO_PUBLIC_*` değişkenleri uygulama paketine gömülür.
   `SUPABASE_SERVICE_ROLE_KEY` sadece `apps/api/.env` içinde kalır.
   Detay: `docs/02-VERI-MODELI-VE-GUVENLIK.md`.
+- **Prisma migration'ı elle "diff"leme.** `prisma migrate diff --shadow-database-url`
+  komutuna **asla** gerçek veritabanının bağlantısını verme. Prisma shadow
+  database'i kendi çalışma alanı olarak kullanıp temizler — bu, migration
+  geçmişi tablosunu (`_prisma_migrations`) düşürür. Yeni migration için
+  `pnpm db:migrate` yeterli; ayrı bir shadow veritabanı gerekiyorsa Supabase'de
+  ikinci bir proje/şema aç.
+- **Web'de Skia çalışmıyor.** `@shopify/react-native-skia` 2.6.2, CanvasKit'ten
+  `PathBuilder` bekliyor; `canvaskit-wasm` 0.41.0 runtime'ı bunu sunmuyor.
+  Canvas kullanan bileşenler `lib/skia-available.ts` üzerinden kendilerini
+  devre dışı bırakıyor ve Skia `require` ile koşullu yükleniyor — statik import
+  edilirse tüm ekran hata sınırına düşüyor. iOS/Android etkilenmiyor.
+

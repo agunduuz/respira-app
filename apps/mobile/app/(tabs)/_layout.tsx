@@ -1,5 +1,5 @@
 import { Tabs } from "expo-router";
-import { Eye, Wind } from "lucide-react-native";
+import { Eye, Settings, Wind } from "lucide-react-native";
 
 import { useThemeStore } from "@/theme/theme-store";
 import { darkPalette, lightPalette, touchTarget } from "@/theme/tokens";
@@ -38,6 +38,13 @@ export default function TabLayout() {
         options={{
           title: "Nefes",
           tabBarIcon: ({ color }) => <Wind size={24} strokeWidth={1.75} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="settings"
+        options={{
+          title: "Ayarlar",
+          tabBarIcon: ({ color }) => <Settings size={24} strokeWidth={1.75} color={color} />,
         }}
       />
     </Tabs>

@@ -18,6 +18,8 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import "react-native-reanimated";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
+import { AuthGate } from "@/components/AuthGate";
+import { initAuth } from "@/lib/auth-store";
 import { initTheme, useThemeStore } from "@/theme/theme-store";
 import { darkPalette, lightPalette } from "@/theme/tokens";
 
@@ -55,6 +57,9 @@ export default function RootLayout() {
       SplashScreen.hideAsync();
     }
   }, [loaded]);
+
+  // Kayıtlı oturumu expo-secure-store'dan oku ve değişiklikleri dinle.
+  useEffect(() => initAuth(), []);
 
   if (!loaded) {
     return null;
@@ -104,18 +109,22 @@ function RootLayoutNav() {
           {/* ThemeProvider tab bar ve başlıkları da boyar — Stack'e tek tek
               screenOptions vermek yeterli olmaz. */}
           <ThemeProvider value={navTheme}>
-            <Stack
-              screenOptions={{
-                contentStyle: { backgroundColor: rgb(palette.bg) },
-                headerTitleStyle: { fontFamily: "SpaceGrotesk_600SemiBold" },
-              }}
-            >
-              <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-              <Stack.Screen
-                name="modal"
-                options={{ presentation: "modal", title: "Hakkında" }}
-              />
-            </Stack>
+            <AuthGate>
+              <Stack
+                screenOptions={{
+                  contentStyle: { backgroundColor: rgb(palette.bg) },
+                  headerTitleStyle: { fontFamily: "SpaceGrotesk_600SemiBold" },
+                }}
+              >
+                <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+                <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+                <Stack.Screen name="(onboarding)" options={{ headerShown: false }} />
+                <Stack.Screen
+                  name="modal"
+                  options={{ presentation: "modal", title: "Hakkında" }}
+                />
+              </Stack>
+            </AuthGate>
           </ThemeProvider>
         </QueryClientProvider>
       </SafeAreaProvider>

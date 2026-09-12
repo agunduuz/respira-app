@@ -26,7 +26,9 @@ function allowedOrigins(): string[] {
 function corsHeaders(origin: string): Record<string, string> {
   return {
     "Access-Control-Allow-Origin": origin,
-    "Access-Control-Allow-Methods": "GET, POST, DELETE, OPTIONS",
+    // Rotalar PUT (ayarlar, profil) ve PATCH (favori) de kullanıyor —
+    // eksik bırakılırsa tarayıcı bu istekleri preflight'ta engelliyor.
+    "Access-Control-Allow-Methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type, Authorization",
     "Access-Control-Max-Age": "86400",
     // Origin'e gore farkli cevap veriyoruz — ara katmanlar karistirmasin.

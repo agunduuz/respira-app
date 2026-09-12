@@ -25,6 +25,11 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  /// docs/02 saklama kuralı: favoriye eklenmemiş kayıtların ham içeriği bu
+  /// süre sonunda temizlenir; sayısal metrikler kalır. Kullanıcı ayarlardan
+  /// değiştirebilir, varsayılan 30 gün.
+  dataRetentionDays Int @default(30)
+
   consents          ConsentRecord[]
   notificationPrefs NotificationPreference[]
   dailyReports      DailyReport[]

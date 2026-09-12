@@ -1,4 +1,5 @@
 import { DELETE_ACCOUNT_CONFIRMATION } from "@respira/shared-types";
+import { Link } from "expo-router";
 import { File, Paths } from "expo-file-system";
 import * as Sharing from "expo-sharing";
 import { useState } from "react";
@@ -85,6 +86,16 @@ export default function SettingsScreen() {
             onPress={() => revoke.mutate("OZEL_NITELIKLI_VERI_RIZASI")}
             loading={revoke.isPending}
           />
+        </Card>
+
+        <Card className="gap-3">
+          <Text variant="title">Kan tahlili</Text>
+          <Text variant="bodySm" muted>
+            Bir sonraki tahlil için takvim hatırlatması kurabilirsin.
+          </Text>
+          <Link href="/blood-test-reminder" asChild>
+            <Button title="Hatırlatmayı yönet" variant="secondary" />
+          </Link>
         </Card>
 
         <Card className="gap-3">

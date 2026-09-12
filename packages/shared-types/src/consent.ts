@@ -23,6 +23,11 @@ export type ConsentType = z.infer<typeof consentTypeSchema>;
 export const CURRENT_CONSENT_VERSIONS = {
   AYDINLATMA_METNI: "aydinlatma-v1",
   OZEL_NITELIKLI_VERI_RIZASI: "acik-riza-v1",
+  // docs/04 Adım 4: kan tahlili hatırlatması açılmadan önce "bu bir tıbbi
+  // öneri değildir" ibaresi gösterilip onaylatılmak ZORUNDA. O onay bu tiple
+  // kaydediliyor — yani bu yalnızca bir bildirim izni değil, yasal uyarının
+  // okunduğunun kaydı.
+  BILDIRIM_IZNI_KAN_TAHLILI: "kan-tahlili-uyari-v1",
 } as const satisfies Partial<Record<ConsentType, string>>;
 
 /**

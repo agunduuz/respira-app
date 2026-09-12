@@ -2,7 +2,7 @@ import type { NotificationCategory } from "@respira/shared-types";
 import * as Notifications from "expo-notifications";
 import { Platform } from "react-native";
 
-import { computeTriggerTimes, type QuietHours } from "./notification-schedule";
+import { computeTriggerTimes, isQuiet, type QuietHours } from "./notification-schedule";
 
 /**
  * docs/08-BILDIRIM-MIMARISI.md — tüm özelliklerin paylaştığı bildirim katmanı.
@@ -119,4 +119,44 @@ export async function configureNotifications(): Promise<void> {
       vibrationPattern: [0, 250, 250, 250],
     });
   }
+}
+
+/**
+ * Tek seferlik uzun vadeli hatırlatma (docs/08 → "Kan tahlili hatırlatması:
+ * tek seferlik, uzun aralık").
+ *
+ * Tekrarlayan bildirimlerden farklı olarak tek bir tarihe kuruluyor; sessiz
+ * saatlere denk gelirse aynı günün sessiz saat bitişine ötelenir — aylar
+ * sonrası için bir günü atlamak anlamsız olurdu.
+ */
+export async function scheduleOneShotReminder(params: {
+  category: NotificationCategory;
+  title: string;
+  body: string;
+  date: Date;
+  quietHours?: QuietHours | null;
+  data?: Record<string, unknown>;
+}): Promise<Date | null> {
+  const { category, title, body, date, quietHours, data } = params;
+
+  await cancelCategory(category);
+
+  if (date.getTime() <= Date.now()) return null;
+
+  let when = new Date(date);
+  if (quietHours && isQuiet(when, quietHours)) {
+    const [endH, endM] = quietHours.end.split(":").map(Number);
+    const shifted = new Date(when);
+    shifted.setHours(endH, endM, 0, 0);
+    // Pencere gece yarısını aşıyorsa bitiş ertesi güne düşebilir.
+    if (shifted.getTime() <= when.getTime()) shifted.setDate(shifted.getDate() + 1);
+    when = shifted;
+  }
+
+  await Notifications.scheduleNotificationAsync({
+    content: { title, body, sound: true, data: { ...data, category } },
+    trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: when },
+  });
+
+  return when;
 }

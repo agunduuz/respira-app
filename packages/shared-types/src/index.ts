@@ -1,3 +1,4 @@
+export * from "./blood-test";
 export * from "./consent";
 export * from "./daily-report";
 export * from "./eye-strain";

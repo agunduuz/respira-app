@@ -65,6 +65,29 @@ pnpm --filter mobile build:prod
 pnpm --filter mobile submit
 ```
 
+## Bakım İşleri
+
+Favoriye eklenmemiş öğünlerin ham içeriği (serbest metin + besin kalemi
+detayı) saklama süresi dolunca temizlenir; sayısal metrikler korunur
+(`docs/02`). Süre kullanıcı başına `users.dataRetentionDays`, varsayılan 30 gün.
+
+Mantık veritabanındaki `purge_non_favorite_content()` fonksiyonunda. Tetikleme
+iki şekilde olabilir:
+
+- **Vercel Cron** (varsayılan): `apps/api/vercel.json` günde bir
+  `POST /api/maintenance/purge` çağırır. `CRON_SECRET` ortam değişkeni zorunlu.
+- **pg_cron** (Vercel dışı ortam):
+  ```sql
+  SELECT cron.schedule('respira-purge', '0 3 * * *',
+    $$SELECT public.purge_non_favorite_content()$$);
+  ```
+
+Elle çalıştırmak için:
+```bash
+curl -X POST http://localhost:3001/api/maintenance/purge \
+  -H "Authorization: Bearer $CRON_SECRET"
+```
+
 ## Notlar
 
 - **pnpm hoisted linker** — `pnpm-workspace.yaml` içinde `nodeLinker: hoisted`.

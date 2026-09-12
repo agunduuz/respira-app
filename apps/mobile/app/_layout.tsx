@@ -142,6 +142,10 @@ function RootLayoutNav() {
                   name="eye-strain-settings"
                   options={{ presentation: "modal", title: "Göz molası ayarları" }}
                 />
+                <Stack.Screen
+                  name="blood-test-reminder"
+                  options={{ presentation: "modal", title: "Kan tahlili hatırlatması" }}
+                />
               </Stack>
             </AuthGate>
           </ThemeProvider>

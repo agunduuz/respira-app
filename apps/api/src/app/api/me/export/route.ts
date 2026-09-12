@@ -12,7 +12,7 @@ export const dynamic = "force-dynamic";
  * YENİ ÖZELLİK EKLERKEN: kullanıcıya ait her yeni tablo buraya da eklenmeli.
  * Eksik bırakılan bir tablo, kullanıcının yasal hakkının eksik karşılanması
  * demek. Şu an kapsananlar: rızalar, bildirim tercihleri, günlük raporlar,
- * göz yorgunluğu, beslenme. Eksik: su, postür, stres (docs/05-07).
+ * göz yorgunluğu, beslenme, postür. Eksik: su, stres (docs/06-07).
  */
 export function GET(request: Request) {
   return handle(async () => {
@@ -29,6 +29,8 @@ export function GET(request: Request) {
       nutritionProfile,
       mealEntries,
       dailyNutrition,
+      postureProfile,
+      postureBreakLogs,
     ] = await Promise.all([
       prisma.consentRecord.findMany({ where: { userId: user.id }, orderBy: { grantedAt: "asc" } }),
       prisma.notificationPreference.findMany({ where: { userId: user.id } }),
@@ -44,11 +46,16 @@ export function GET(request: Request) {
         where: { userId: user.id },
         orderBy: { date: "asc" },
       }),
+      prisma.postureProfile.findUnique({ where: { userId: user.id } }),
+      prisma.postureBreakLog.findMany({
+        where: { userId: user.id },
+        orderBy: { triggeredAt: "asc" },
+      }),
     ]);
 
     return {
       exportedAt: new Date().toISOString(),
-      formatVersion: 2,
+      formatVersion: 3,
       account: {
         id: user.id,
         email: user.email,
@@ -63,6 +70,7 @@ export function GET(request: Request) {
         mealEntries,
         dailySummaries: dailyNutrition,
       },
+      posture: { profile: postureProfile, breakLogs: postureBreakLogs },
     };
   });
 }

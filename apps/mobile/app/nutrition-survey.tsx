@@ -165,7 +165,10 @@ export default function NutritionSurveyScreen() {
 
     try {
       await save.mutateAsync(parsed.data);
-      router.replace("/nutrition");
+      // Form sekmenin üstünde açıldığı için geri dönüyoruz. replace ile sekme
+      // rotasına gitmek ekranın ikinci bir kopyasını mount ediyor.
+      if (router.canGoBack()) router.back();
+      else router.replace("/nutrition");
     } catch {
       setError("Kaydedilemedi. Bağlantını kontrol edip tekrar dene.");
     }

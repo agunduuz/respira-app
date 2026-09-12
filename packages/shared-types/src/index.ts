@@ -6,4 +6,7 @@ export * from "./notification";
 export * from "./nutrition";
 export * from "./nutrition-advice";
 export * from "./nutrition-math";
+export * from "./posture";
+export * from "./posture-exercises";
+export * from "./posture-fyi";
 export * from "./user";

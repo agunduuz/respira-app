@@ -1,5 +1,5 @@
 import { Tabs } from "expo-router";
-import { Eye, Settings, UtensilsCrossed, Wind } from "lucide-react-native";
+import { Eye, PersonStanding, Settings, UtensilsCrossed, Wind } from "lucide-react-native";
 
 import { useThemeStore } from "@/theme/theme-store";
 import { darkPalette, lightPalette, touchTarget } from "@/theme/tokens";
@@ -40,6 +40,13 @@ export default function TabLayout() {
           tabBarIcon: ({ color }) => (
             <UtensilsCrossed size={24} strokeWidth={1.75} color={color} />
           ),
+        }}
+      />
+      <Tabs.Screen
+        name="posture"
+        options={{
+          title: "Duruş",
+          tabBarIcon: ({ color }) => <PersonStanding size={24} strokeWidth={1.75} color={color} />,
         }}
       />
       <Tabs.Screen

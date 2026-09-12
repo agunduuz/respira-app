@@ -41,9 +41,10 @@ model User {
   mealEntries      MealEntry[]
   dailyNutrition   DailyNutritionSummary[]
 
+  postureProfile   PostureProfile?
+  postureBreakLogs PostureBreakLog[]
+
   // --- Özellik ilişkileri (ilgili özellik geliştirilince açılacak) ---
-  // postureProfile    PostureProfile?         // docs/05
-  // postureBreakLogs  PostureBreakLog[]       // docs/05
   // waterGoal         WaterGoal?              // docs/06
   // waterLogs         WaterIntakeLog[]        // docs/06
   // stressProfile     StressProfile?          // docs/07
@@ -265,4 +266,63 @@ model DailyNutritionSummary {
 
   @@unique([userId, date])
   @@map("daily_nutrition_summaries")
+}
+
+// ---------- POSTÜR / ERGONOMİ (docs/05) ----------
+
+model PostureProfile {
+  id     String @id @default(uuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  workStyle         WorkStyle
+  workIntensity     WorkIntensity
+  screenHoursPerDay Int?
+  occupationType    String
+
+  /// Saat başı kendine ayırabileceği dakika — egzersiz seti bu süreye
+  /// göre seçiliyor (docs/05 egzersiz üretim mantığı).
+  minutesPerHourAvailable Int
+
+  /// Mesai saatleri. Bildirimler yalnızca bu aralıkta gönderilir; dışarısı
+  /// sessiz saat olarak ele alınıyor (docs/05 + docs/08).
+  workHoursStart String? // "09:00"
+  workHoursEnd   String? // "18:00"
+
+  updatedAt DateTime @updatedAt
+
+  @@map("posture_profiles")
+}
+
+enum WorkStyle {
+  SEDENTARY
+  STANDING_ACTIVE
+  MIXED
+}
+
+enum WorkIntensity {
+  LIGHT
+  MODERATE
+  HEAVY
+}
+
+model PostureBreakLog {
+  id            String      @id @default(uuid())
+  userId        String
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  triggeredAt   DateTime    @default(now())
+  status        BreakStatus
+  /// Hangi egzersiz seti önerildi — set tanımları kodda
+  /// (packages/shared-types/src/posture-exercises.ts).
+  exerciseSetId String?
+
+  @@unique([userId, triggeredAt])
+  @@index([userId, triggeredAt])
+  @@map("posture_break_logs")
+}
+
+enum BreakStatus {
+  COMPLETED
+  SKIPPED
+  MISSED
 }

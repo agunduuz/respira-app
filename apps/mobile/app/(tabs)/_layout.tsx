@@ -1,5 +1,5 @@
 import { Tabs } from "expo-router";
-import { ChartColumn, Eye, Settings, Wind } from "lucide-react-native";
+import { Eye, Settings, UtensilsCrossed, Wind } from "lucide-react-native";
 
 import { useThemeStore } from "@/theme/theme-store";
 import { darkPalette, lightPalette, touchTarget } from "@/theme/tokens";
@@ -34,17 +34,19 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="nutrition"
+        options={{
+          title: "Beslenme",
+          tabBarIcon: ({ color }) => (
+            <UtensilsCrossed size={24} strokeWidth={1.75} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="two"
         options={{
           title: "Nefes",
           tabBarIcon: ({ color }) => <Wind size={24} strokeWidth={1.75} color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="eye-analysis"
-        options={{
-          title: "Analiz",
-          tabBarIcon: ({ color }) => <ChartColumn size={24} strokeWidth={1.75} color={color} />,
         }}
       />
       <Tabs.Screen

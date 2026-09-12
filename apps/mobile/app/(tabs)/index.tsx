@@ -209,6 +209,9 @@ export default function TimerScreen() {
           <Link href="/eye-strain-settings" asChild>
             <Button title="Süreleri değiştir" variant="secondary" />
           </Link>
+          <Link href="/eye-analysis" asChild>
+            <Button title="Uyum analizi" variant="secondary" />
+          </Link>
         </Card>
 
         <Text variant="bodySm" muted>

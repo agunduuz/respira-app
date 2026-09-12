@@ -142,6 +142,13 @@ function RootLayoutNav() {
                   name="eye-strain-settings"
                   options={{ presentation: "modal", title: "Göz molası ayarları" }}
                 />
+                <Stack.Screen name="eye-analysis" options={{ title: "Göz analizi" }} />
+                <Stack.Screen name="nutrition-survey" options={{ title: "Beslenme anketi" }} />
+                <Stack.Screen name="nutrition-report" options={{ title: "Beslenme raporu" }} />
+                <Stack.Screen
+                  name="meal-entry"
+                  options={{ presentation: "modal", title: "Öğün ekle" }}
+                />
                 <Stack.Screen
                   name="blood-test-reminder"
                   options={{ presentation: "modal", title: "Kan tahlili hatırlatması" }}

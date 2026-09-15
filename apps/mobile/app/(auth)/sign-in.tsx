@@ -1,9 +1,12 @@
+import { CircleAlert } from "lucide-react-native";
 import { useState } from "react";
 import { KeyboardAvoidingView, Platform, TextInput, View } from "react-native";
 
 import { Button, Card, Screen, Text } from "@/components/ui";
+import { translateAuthError } from "@/lib/auth-errors";
 import { supabase } from "@/lib/supabase";
-import { touchTarget } from "@/theme/tokens";
+import { useThemeStore } from "@/theme/theme-store";
+import { darkPalette, lightPalette, touchTarget } from "@/theme/tokens";
 
 type Step = "email" | "code";
 
@@ -13,6 +16,10 @@ type Step = "email" | "code";
  * Oturum token'ı expo-secure-store'da şifreli saklanır (lib/supabase.ts).
  */
 export default function SignInScreen() {
+  const preference = useThemeStore((s) => s.preference);
+  const palette = preference === "light" ? lightPalette : darkPalette;
+  const rgb = (c: string) => `rgb(${c.split(" ").join(", ")})`;
+
   const [step, setStep] = useState<Step>("email");
   const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
@@ -31,7 +38,7 @@ export default function SignInScreen() {
     });
     setBusy(false);
     if (err) {
-      setError(err.message);
+      setError(translateAuthError(err.message));
       return;
     }
     setStep("code");
@@ -46,7 +53,7 @@ export default function SignInScreen() {
       type: "email",
     });
     setBusy(false);
-    if (err) setError(err.message);
+    if (err) setError(translateAuthError(err.message));
     // Başarılıysa onAuthStateChange tetiklenir ve yönlendirmeyi kapı yapar.
   }
 
@@ -126,9 +133,15 @@ export default function SignInScreen() {
           )}
 
           {error ? (
-            <Text variant="bodySm" className="text-danger">
-              {error}
-            </Text>
+            <View
+              className="flex-row items-start gap-2 rounded-md border border-danger bg-danger/12 p-3"
+              accessibilityRole="alert"
+            >
+              <CircleAlert size={18} strokeWidth={1.75} color={rgb(palette.danger)} />
+              <Text variant="bodySm" className="flex-1 text-danger">
+                {error}
+              </Text>
+            </View>
           ) : null}
         </Card>
       </KeyboardAvoidingView>

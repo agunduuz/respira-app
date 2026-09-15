@@ -145,6 +145,11 @@ function RootLayoutNav() {
                 <Stack.Screen name="eye-analysis" options={{ title: "Göz analizi" }} />
                 <Stack.Screen name="nutrition-survey" options={{ title: "Beslenme anketi" }} />
                 <Stack.Screen name="posture-form" options={{ title: "Duruş profili" }} />
+                <Stack.Screen name="water-goal" options={{ title: "Su hedefi" }} />
+                <Stack.Screen
+                  name="breathing-session"
+                  options={{ presentation: "modal", title: "Nefes egzersizi" }}
+                />
                 <Stack.Screen name="nutrition-report" options={{ title: "Beslenme raporu" }} />
                 <Stack.Screen
                   name="meal-entry"

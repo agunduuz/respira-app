@@ -3,8 +3,9 @@
 //
 // Özelliklere ait modeller (EyeStrainSettings, NutritionProfile, MealEntry,
 // PostureProfile, WaterGoal, StressProfile ...) ilgili özellik dosyalarında
-// (docs/03-... — docs/07-...) tanımlı. O özellik geliştirilirken hem modeli
-// hem de aşağıdaki User modelindeki yorum satırına alınmış ilişkiyi aç.
+// (docs/03-... — docs/07-...) tanımlı. Henüz geliştirilmemiş özellik varsa
+// hem modeli hem de aşağıdaki User modelindeki yorum satırına alınmış
+// ilişkiyi o özellik geliştirilirken aç.
 
 datasource db {
   provider  = "postgresql"
@@ -44,11 +45,11 @@ model User {
   postureProfile   PostureProfile?
   postureBreakLogs PostureBreakLog[]
 
-  // --- Özellik ilişkileri (ilgili özellik geliştirilince açılacak) ---
-  // waterGoal         WaterGoal?              // docs/06
-  // waterLogs         WaterIntakeLog[]        // docs/06
-  // stressProfile     StressProfile?          // docs/07
-  // breathingSessions BreathingSession[]      // docs/07
+  waterGoal WaterGoal?
+  waterLogs WaterIntakeLog[]
+
+  stressProfile     StressProfile?
+  breathingSessions BreathingSession[]
 
   @@map("users")
 }
@@ -325,4 +326,76 @@ enum BreakStatus {
   COMPLETED
   SKIPPED
   MISSED
+}
+
+// ---------- SU TÜKETİMİ (docs/06) ----------
+
+model WaterGoal {
+  id     String @id @default(uuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  dailyTargetMl Int
+  /// Kullanıcı önerilen hedefi elle değiştirdiyse true — kilo güncellenirse
+  /// bile bu hedef sessizce ezilmez (docs/04'teki macrosCustomized ile aynı desen).
+  isCustomized  Boolean @default(false)
+
+  /// Saatlik dağılım referansı bu pencereye göre hesaplanır (docs/06).
+  wakeTime  String @default("08:00")
+  sleepTime String @default("23:00")
+
+  updatedAt DateTime @updatedAt
+
+  @@map("water_goals")
+}
+
+model WaterIntakeLog {
+  id       String   @id @default(uuid())
+  userId   String
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  amountMl Int
+  loggedAt DateTime @default(now())
+
+  @@index([userId, loggedAt])
+  @@map("water_intake_logs")
+}
+
+// ---------- STRES YÖNETİMİ (docs/07) ----------
+
+enum BreathingTechnique {
+  BOX
+  FOUR_SEVEN_EIGHT
+  DIAPHRAGMATIC
+}
+
+model StressProfile {
+  id     String @id @default(uuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  /// "Günde kaç kez bu tür bir mola almak istersin?" — hazır seçenekler
+  /// packages/shared-types/src/stress.ts → STRESS_SESSIONS_PER_DAY_PRESETS.
+  desiredSessionsPerDay Int
+
+  updatedAt DateTime @updatedAt
+
+  @@map("stress_profiles")
+}
+
+model BreathingSession {
+  id     String @id @default(uuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  /// 1-5 öz-değerlendirme; anket atlanıp doğrudan teknik seçilmişse null.
+  stressLevel     Int?
+  technique       BreathingTechnique
+  /// Gerçekte tamamlanan süre — kullanıcı erken bitirebilir.
+  durationSeconds Int
+  status          BreakStatus
+  triggeredAt     DateTime           @default(now())
+
+  @@unique([userId, triggeredAt])
+  @@index([userId, triggeredAt])
+  @@map("breathing_sessions")
 }

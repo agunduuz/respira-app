@@ -1,5 +1,5 @@
 import { Tabs } from "expo-router";
-import { Eye, PersonStanding, Settings, UtensilsCrossed, Wind } from "lucide-react-native";
+import { Droplet, Eye, PersonStanding, Settings, UtensilsCrossed, Wind } from "lucide-react-native";
 
 import { useThemeStore } from "@/theme/theme-store";
 import { darkPalette, lightPalette, touchTarget } from "@/theme/tokens";
@@ -43,6 +43,13 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="water"
+        options={{
+          title: "Su",
+          tabBarIcon: ({ color }) => <Droplet size={24} strokeWidth={1.75} color={color} />,
+        }}
+      />
+      <Tabs.Screen
         name="posture"
         options={{
           title: "Duruş",
@@ -50,7 +57,7 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="two"
+        name="stress"
         options={{
           title: "Nefes",
           tabBarIcon: ({ color }) => <Wind size={24} strokeWidth={1.75} color={color} />,

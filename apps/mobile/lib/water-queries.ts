@@ -46,6 +46,14 @@ export function useTodayIntake(enabled: boolean) {
   });
 }
 
+type IntakeCache = { logs: WaterIntakeLogRow[]; totalMl: number };
+
+/**
+ * Ekle/sil, sunucu yanıtını beklemeden önbelleği hemen güncelliyor
+ * (optimistic update) — invalidate + yeniden fetch turu beklenirse buton
+ * tepkisi 1-2 saniye gecikmeli hissettiriyordu. Hata olursa `onError` önceki
+ * durumu geri yükler; `onSettled` sunucuyla son kez senkronlar.
+ */
 export function useLogIntake() {
   const qc = useQueryClient();
   return useMutation({
@@ -54,6 +62,49 @@ export function useLogIntake() {
         method: "POST",
         body: JSON.stringify(input),
       }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: waterKeys.intake }),
+    onMutate: async (input) => {
+      await qc.cancelQueries({ queryKey: waterKeys.intake });
+      const previous = qc.getQueryData<IntakeCache>(waterKeys.intake);
+      const optimisticLog: WaterIntakeLogRow = {
+        id: `optimistic-${Date.now()}`,
+        amountMl: input.amountMl,
+        loggedAt: input.loggedAt ?? new Date().toISOString(),
+      };
+      qc.setQueryData<IntakeCache>(waterKeys.intake, (old) => ({
+        logs: [optimisticLog, ...(old?.logs ?? [])],
+        totalMl: (old?.totalMl ?? 0) + input.amountMl,
+      }));
+      return { previous };
+    },
+    onError: (_err, _input, ctx) => {
+      if (ctx?.previous) qc.setQueryData(waterKeys.intake, ctx.previous);
+    },
+    onSettled: () => qc.invalidateQueries({ queryKey: waterKeys.intake }),
+  });
+}
+
+/** Yanlışlıkla eklenen bir girişi geri almak için. */
+export function useDeleteIntake() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) =>
+      apiFetch<{ deleted: true }>(`/api/water/intake/${id}`, { method: "DELETE" }),
+    onMutate: async (id) => {
+      await qc.cancelQueries({ queryKey: waterKeys.intake });
+      const previous = qc.getQueryData<IntakeCache>(waterKeys.intake);
+      qc.setQueryData<IntakeCache>(waterKeys.intake, (old) => {
+        if (!old) return old;
+        const removed = old.logs.find((l) => l.id === id);
+        return {
+          logs: old.logs.filter((l) => l.id !== id),
+          totalMl: removed ? old.totalMl - removed.amountMl : old.totalMl,
+        };
+      });
+      return { previous };
+    },
+    onError: (_err, _id, ctx) => {
+      if (ctx?.previous) qc.setQueryData(waterKeys.intake, ctx.previous);
+    },
+    onSettled: () => qc.invalidateQueries({ queryKey: waterKeys.intake }),
   });
 }

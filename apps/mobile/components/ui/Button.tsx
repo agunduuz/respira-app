@@ -1,3 +1,4 @@
+import type { LucideIcon } from "lucide-react-native";
 import { ActivityIndicator, Pressable, View, type PressableProps } from "react-native";
 
 import { cn } from "@/theme/cn";
@@ -25,6 +26,9 @@ export interface ButtonProps extends Omit<PressableProps, "children" | "style"> 
   variant?: Variant;
   loading?: boolean;
   className?: string;
+  /** Etiketten önce gösterilen ikon — rengi `iconColor` ile verilir (SVG, className rengi miras almaz). */
+  icon?: LucideIcon;
+  iconColor?: string;
 }
 
 /**
@@ -39,6 +43,8 @@ export function Button({
   loading = false,
   disabled,
   className,
+  icon: Icon,
+  iconColor,
   ...rest
 }: ButtonProps) {
   const isDisabled = disabled || loading;
@@ -67,6 +73,7 @@ export function Button({
           style={{ opacity: pressed && !isDisabled ? 0.65 : 1 }}
         >
           {loading ? <ActivityIndicator size="small" /> : null}
+          {!loading && Icon ? <Icon size={18} strokeWidth={1.75} color={iconColor} /> : null}
           <Text variant="label" className={label[variant]}>
             {title}
           </Text>

@@ -4,19 +4,25 @@ import { ActivityIndicator, View } from "react-native";
 
 import { useAuthStore } from "@/lib/auth-store";
 import { useBootstrap, useConsentStatus } from "@/lib/queries";
+import { useWelcomeStore } from "@/lib/welcome-store";
 
 /**
- * Uygulamanın giriş kapısı. Üç durumu yönetiyor:
+ * Uygulamanın giriş kapısı. Dört durumu yönetiyor:
+ *   0. oturum yok, karşılama akışı hiç görülmedi → /(welcome)
  *   1. oturum yok           → /sign-in
  *   2. oturum var, rıza eksik → /aydinlatma  (docs/02: veri toplanmadan önce)
  *   3. her şey tamam         → sekmeler
  *
  * Rıza durumu sunucudan geliyor; istemcide "onayladı" bayrağı tutmuyoruz ki
- * uygulama silinip yeniden kurulduğunda kontrol atlanamasın.
+ * uygulama silinip yeniden kurulduğunda kontrol atlanamasın. Karşılama
+ * bayrağı (hasSeenWelcome) hassas olmadığı için cihazda (AsyncStorage) tutulur
+ * — sadece "bu akışı bir daha gösterme" için, güvenlik amaçlı değil.
  */
 export function AuthGate({ children }: { children: React.ReactNode }) {
   const session = useAuthStore((s) => s.session);
   const authLoading = useAuthStore((s) => s.loading);
+  const hasSeenWelcome = useWelcomeStore((s) => s.hasSeenWelcome);
+  const welcomeHydrated = useWelcomeStore((s) => s.hydrated);
   const segments = useSegments();
 
   const signedIn = !!session;
@@ -26,13 +32,18 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
 
   const inAuthGroup = segments[0] === "(auth)";
   const inOnboarding = segments[0] === "(onboarding)";
+  const inWelcomeGroup = segments[0] === "(welcome)";
 
   const missingCount = consents.data?.missing.length ?? null;
 
   useEffect(() => {
-    if (authLoading) return;
+    if (authLoading || !welcomeHydrated) return;
 
     if (!signedIn) {
+      if (!hasSeenWelcome) {
+        if (!inWelcomeGroup) router.replace("/(welcome)");
+        return;
+      }
       if (!inAuthGroup) router.replace("/sign-in");
       return;
     }
@@ -52,10 +63,22 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
     }
 
     if (inAuthGroup || inOnboarding) router.replace("/");
-  }, [authLoading, signedIn, missingCount, inAuthGroup, inOnboarding, consents.data]);
+  }, [
+    authLoading,
+    welcomeHydrated,
+    hasSeenWelcome,
+    inWelcomeGroup,
+    signedIn,
+    missingCount,
+    inAuthGroup,
+    inOnboarding,
+    consents.data,
+  ]);
 
   const settling =
-    authLoading || (signedIn && (bootstrap.isPending || (bootstrap.isSuccess && consents.isPending)));
+    authLoading ||
+    !welcomeHydrated ||
+    (signedIn && (bootstrap.isPending || (bootstrap.isSuccess && consents.isPending)));
 
   if (settling) {
     return (

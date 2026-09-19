@@ -1,8 +1,10 @@
 import type { NutritionPeriod } from "@respira/shared-types";
+import { router } from "expo-router";
+import { ClipboardList } from "lucide-react-native";
 import { useState } from "react";
 import { ActivityIndicator, ScrollView, View } from "react-native";
 
-import { Button, Card, Screen, Text } from "@/components/ui";
+import { Button, Card, Screen, Segmented, Text } from "@/components/ui";
 import { useNutritionReport } from "@/lib/nutrition-queries";
 import { isSkiaUsable } from "@/lib/skia-available";
 import { useThemeStore } from "@/theme/theme-store";
@@ -14,11 +16,11 @@ const victory = isSkiaUsable()
 
 const rgb = (c: string) => `rgb(${c.split(" ").join(", ")})`;
 
-const LABELS: Record<NutritionPeriod, string> = {
-  daily: "Günlük",
-  weekly: "Haftalık",
-  monthly: "Aylık",
-};
+const PERIOD_OPTIONS = [
+  { value: "daily", label: "Günlük" },
+  { value: "weekly", label: "Haftalık" },
+  { value: "monthly", label: "Aylık" },
+] as const;
 
 /**
  * docs/04 raporlama.
@@ -48,22 +50,22 @@ export default function NutritionReportScreen() {
   return (
     <Screen edges={["bottom"]}>
       <ScrollView contentContainerClassName="gap-4 p-4 pb-12">
-        <View className="flex-row gap-2">
-          {(Object.keys(LABELS) as NutritionPeriod[]).map((p) => (
-            <Button
-              key={p}
-              title={LABELS[p]}
-              variant={period === p ? "primary" : "secondary"}
-              onPress={() => setPeriod(p)}
-              className="flex-1"
-            />
-          ))}
+        <View className="gap-1">
+          <Text variant="label" muted>
+            RAPOR
+          </Text>
+          <Text variant="displayLg">Beslenme raporu</Text>
         </View>
 
+        <Segmented options={PERIOD_OPTIONS} value={period} onChange={setPeriod} />
+
         {isPending ? (
-          <View className="py-12">
-            <ActivityIndicator />
-          </View>
+          <Card className="items-center justify-center gap-2 py-16">
+            <ActivityIndicator color={rgb(palette.accent)} />
+            <Text variant="bodySm" muted>
+              Rapor hazırlanıyor…
+            </Text>
+          </Card>
         ) : isError ? (
           <Card>
             <Text variant="bodySm" className="text-danger">
@@ -71,12 +73,31 @@ export default function NutritionReportScreen() {
             </Text>
           </Card>
         ) : !data || data.daysWithData === 0 ? (
-          <Card>
-            <Text variant="bodySm" muted>
-              Bu dönemde detaylı modda girilmiş öğün yok. Rapor yalnızca besin
-              değeri girilen öğünlerden oluşur.
-            </Text>
-          </Card>
+          <View className="items-center gap-6 py-10">
+            <View className="items-center justify-center" style={{ width: 64, height: 64 }}>
+              <View
+                className="bg-accent"
+                style={{ position: "absolute", width: 64, height: 64, borderRadius: 32, opacity: 0.12 }}
+              />
+              <View
+                className="items-center justify-center rounded-full bg-elevated"
+                style={{ width: 48, height: 48 }}
+              >
+                <ClipboardList size={22} strokeWidth={1.75} color={rgb(palette.accent)} />
+              </View>
+            </View>
+            <View className="items-center gap-1 px-6">
+              <Text variant="title" className="text-center">
+                Bu {PERIOD_OPTIONS.find((p) => p.value === period)?.label.toLowerCase()} dönemde henüz rapor yok
+              </Text>
+              <Text variant="bodySm" muted className="text-center">
+                Rapor, besin değeri girdiğin (detaylı mod) öğünlerden oluşuyor.
+                Birkaç öğün ekledikten sonra buraya dönüp hedeflerinle
+                karşılaştırmayı görebilirsin.
+              </Text>
+            </View>
+            <Button title="Öğün eklemeye git" onPress={() => router.back()} />
+          </View>
         ) : (
           <>
             <Card className="gap-3">
@@ -86,7 +107,7 @@ export default function NutritionReportScreen() {
               <Metric label="Kalori" value={data.averages.calories} target={data.targets.calories} pct={data.vsTarget.calories} unit="kcal" />
               <Metric label="Protein" value={data.averages.proteinG} target={data.targets.proteinG} pct={data.vsTarget.proteinG} unit="g" />
               <Metric label="Karbonhidrat" value={data.averages.carbsG} target={data.targets.carbsG} pct={data.vsTarget.carbsG} unit="g" />
-              <Metric label="Yağ" value={data.averages.fatG} target={data.targets.fatG} pct={data.vsTarget.fatG} unit="g" />
+              <Metric label="Yağ" value={data.averages.fatG} target={data.targets.fatG} pct={data.vsTarget.fatG} unit="g" last />
             </Card>
 
             <Card className="gap-3">
@@ -136,11 +157,11 @@ export default function NutritionReportScreen() {
   );
 }
 
-function Metric({ label, value, target, pct, unit }: {
-  label: string; value: number | null; target: number; pct: number | null; unit: string;
+function Metric({ label, value, target, pct, unit, last }: {
+  label: string; value: number | null; target: number; pct: number | null; unit: string; last?: boolean;
 }) {
   return (
-    <View className="flex-row items-baseline justify-between gap-3 border-b border-border pb-2">
+    <View className={`flex-row items-baseline justify-between gap-3 pb-2${last ? "" : " border-b border-border"}`}>
       <Text variant="body">{label}</Text>
       <Text variant="data" muted>
         {value === null ? "—" : Math.round(value)} / {Math.round(target)} {unit}

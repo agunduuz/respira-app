@@ -6,9 +6,11 @@ import { router } from "expo-router";
 import { useEffect, useState } from "react";
 import { ActivityIndicator, ScrollView, TextInput, View } from "react-native";
 
+import { DatePickerField } from "@/components/nutrition/DatePickerField";
 import { Button, Card, Checkbox, Screen, Text } from "@/components/ui";
 import { useBloodTestReminder, useEnableBloodTestReminder } from "@/lib/blood-test-queries";
 import { DEFAULT_QUIET_HOURS, ensurePermission, scheduleOneShotReminder } from "@/lib/notifications";
+import { useNutritionProfile } from "@/lib/nutrition-queries";
 import { touchTarget } from "@/theme/tokens";
 
 type Step = "ask" | "interval";
@@ -21,6 +23,7 @@ type Step = "ask" | "interval";
  * "Hatırlatmayı kur" etkinleşmiyor; sunucu da rızasız isteği reddediyor.
  */
 export default function BloodTestReminderScreen() {
+  const { data: profileData, isPending: profilePending } = useNutritionProfile();
   const { data, isPending } = useBloodTestReminder();
   const save = useEnableBloodTestReminder();
 
@@ -33,7 +36,10 @@ export default function BloodTestReminderScreen() {
   const [scheduled, setScheduled] = useState<string | null>(null);
 
   useEffect(() => {
+    // Sunucudan gelen kayıtlı hatırlatmayı bir kerelik düzenlenebilir yerel
+    // forma kopyalıyoruz — react-query verisini forma senkronlamanın standart yolu.
     if (data) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setLastDate(data.lastBloodTestDate ?? "");
       if (data.reminderMonths) {
         setMonths(data.reminderMonths);
@@ -92,10 +98,30 @@ export default function BloodTestReminderScreen() {
     router.back();
   }
 
-  if (isPending) {
+  if (isPending || profilePending) {
     return (
       <Screen className="items-center justify-center">
         <ActivityIndicator />
+      </Screen>
+    );
+  }
+
+  // Sunucu hatırlatmayı yalnızca bir beslenme profili varsa kurabiliyor
+  // (NO_PROFILE hatası). Bu ham hatayı kullanıcıya göstermek yerine, profil
+  // yoksa akışa hiç girmeden önce anketi tamamlamaya yönlendiriyoruz.
+  if (!profileData?.profile) {
+    return (
+      <Screen className="items-center justify-center p-6">
+        <Card className="items-center gap-3">
+          <Text variant="title" className="text-center">
+            Önce beslenme anketini tamamla
+          </Text>
+          <Text variant="bodySm" muted className="text-center">
+            Kan tahlili hatırlatması, beslenme profilinin bir parçası. Anketi
+            tamamladıktan sonra buraya dönüp kurabilirsin.
+          </Text>
+          <Button title="Beslenme anketine git" onPress={() => router.replace("/nutrition-survey")} />
+        </Card>
       </Screen>
     );
   }
@@ -155,24 +181,13 @@ export default function BloodTestReminderScreen() {
                 </View>
               ) : null}
 
-              <View className="gap-2">
-                <Text variant="label" muted>
-                  SON TAHLİL TARİHİ (OPSİYONEL)
-                </Text>
-                <TextInput
-                  value={lastDate}
-                  onChangeText={setLastDate}
-                  placeholder="2026-01-15"
-                  keyboardType="numbers-and-punctuation"
-                  maxLength={10}
-                  accessibilityLabel="Son kan tahlili tarihi"
-                  style={{ minHeight: touchTarget.min }}
-                  className={inputClass}
-                />
-                <Text variant="bodySm" muted>
-                  Boş bırakırsan hatırlatma bugünden itibaren sayılır.
-                </Text>
-              </View>
+              <DatePickerField
+                label="Son tahlil tarihi"
+                optional
+                value={lastDate}
+                onChange={setLastDate}
+                hint="Boş bırakırsan hatırlatma bugünden itibaren sayılır."
+              />
             </Card>
 
             {/* docs/04: bu ibare ZORUNLU olarak gösterilir ve onaylatılır. */}

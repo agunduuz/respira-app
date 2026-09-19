@@ -161,7 +161,7 @@ Bu ifadeler her ilgili ekranın altında sabit, göz ardı edilemeyecek şekilde
 
 | Alan | Kural |
 |---|---|
-| **Kimlik doğrulama** | Supabase Auth (email/OTP veya sosyal giriş). Access token `expo-secure-store`'da şifreli saklanır, asla `AsyncStorage`'da düz metin değil. |
+| **Kimlik doğrulama** | Supabase Auth (email/şifre — `signUp`/`signInWithPassword`). Access token `expo-secure-store`'da şifreli saklanır, asla `AsyncStorage`'da düz metin değil. Kayıt sonrası otomatik oturum açabilmek için Supabase projesinde Authentication → Sign In / Providers → Email → "Confirm email" **kapalı** olmalı; açıksa kullanıcı önce e-postasındaki linke tıklamalı. |
 | **Yetkilendirme** | Supabase **Row Level Security (RLS)** açık — her kullanıcı sadece `user_id = auth.uid()` olan satırları görebilir/değiştirebilir. Backend API'de de her sorguda `userId` kontrolü tekrarlanır (defense in depth). |
 | **Veri aktarımı** | Tüm API çağrıları HTTPS üzerinden. Hassas alanlar (kan grubu, tahlil tarihi) API loglarına yazılmamalı. |
 | **Girdi doğrulama** | Her API endpoint'i Zod şemasıyla doğrulanır — hem mobile hem backend aynı şemayı `packages/shared-types`'tan import eder. |

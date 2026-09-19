@@ -6,14 +6,27 @@ import {
   type NutritionProfileInput,
   type TrainingFrequency,
 } from "@respira/shared-types";
-import { Link, router } from "expo-router";
-import { useMemo, useState } from "react";
+import { router } from "expo-router";
+import { PartyPopper } from "lucide-react-native";
+import { useEffect, useMemo, useState } from "react";
 import { ScrollView, View } from "react-native";
+import Animated, { useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated";
 
 import { ChoiceGroup } from "@/components/nutrition/ChoiceGroup";
+import { DatePickerField } from "@/components/nutrition/DatePickerField";
 import { Field } from "@/components/nutrition/Field";
+import { MultiChoiceGroup } from "@/components/nutrition/MultiChoiceGroup";
 import { Button, Card, Screen, Text } from "@/components/ui";
 import { useNutritionProfile, useSaveNutritionProfile } from "@/lib/nutrition-queries";
+import { cn } from "@/theme/cn";
+import { useMotion } from "@/theme/use-motion";
+import { useThemeStore } from "@/theme/theme-store";
+import { darkPalette, lightPalette } from "@/theme/tokens";
+
+const rgb = (c: string) => `rgb(${c.split(" ").join(", ")})`;
+
+const TOTAL_STEPS = 4;
+const STEP_TITLES = ["Seni tanıyalım", "Makro hedefleri", "Sağlık bilgileri", "Neredeyse hazırsın!"];
 
 const TRAINING_FREQ: readonly { value: TrainingFrequency; label: string }[] = [
   { value: "NEVER", label: "Hiçbir zaman" },
@@ -40,7 +53,7 @@ type Draft = {
   age: string; heightCm: string; weightKg: string;
   biologicalSex: "MALE" | "FEMALE" | null;
   trainingFrequency: TrainingFrequency | null;
-  trainingType: string | null;
+  trainingTypes: string[];
   bodyGoal: BodyGoal | null;
   bodyFatPercent: string;
   neck: string; arm: string; waist: string; hip: string;
@@ -51,7 +64,7 @@ type Draft = {
 
 const EMPTY: Draft = {
   mealsPerDay: "3", age: "", heightCm: "", weightKg: "", biologicalSex: null,
-  trainingFrequency: null, trainingType: null, bodyGoal: null,
+  trainingFrequency: null, trainingTypes: [], bodyGoal: null,
   bodyFatPercent: "", neck: "", arm: "", waist: "", hip: "",
   targetCalories: "", targetProteinG: "", targetCarbsG: "", targetFatG: "",
   macrosCustomized: false,
@@ -60,24 +73,91 @@ const EMPTY: Draft = {
 
 const num = (s: string) => (s.trim() === "" ? null : Number(s));
 
+/** Zod path'in son parçasını (nested `measurements.neck` dahil) ekrandaki alanla eşler. */
+const FIELD_META: Record<string, { label: string; step: number }> = {
+  mealsPerDay: { label: "Öğün sayısı", step: 1 },
+  age: { label: "Yaş", step: 1 },
+  heightCm: { label: "Boy", step: 1 },
+  weightKg: { label: "Kilo", step: 1 },
+  bodyFatPercent: { label: "Yağ oranı", step: 1 },
+  neck: { label: "Boyun ölçüsü", step: 1 },
+  arm: { label: "Kol ölçüsü", step: 1 },
+  waist: { label: "Bel ölçüsü", step: 1 },
+  hip: { label: "Kalça ölçüsü", step: 1 },
+  trainingType: { label: "Antrenman türü", step: 1 },
+  targetCalories: { label: "Kalori", step: 2 },
+  targetProteinG: { label: "Protein", step: 2 },
+  targetCarbsG: { label: "Karbonhidrat", step: 2 },
+  targetFatG: { label: "Yağ", step: 2 },
+  bloodType: { label: "Kan grubu", step: 3 },
+  sugarNeedRate: { label: "Şeker ihtiyaç oranı", step: 3 },
+  lastBloodTestDate: { label: "Son kan tahlili tarihi", step: 3 },
+};
+
+/** Zod'un İngilizce "Too big/small" mesajları yerine, alanı ve sınırı adıyla söyleyen bir cümle. */
+function friendlyIssueMessage(
+  issue: { code: string; maximum?: unknown; minimum?: unknown },
+  label: string
+): string {
+  if (issue.code === "too_big") return `${label} en fazla ${issue.maximum} olabilir.`;
+  if (issue.code === "too_small") return `${label} en az ${issue.minimum} olmalı.`;
+  if (issue.code === "invalid_type") return `${label} eksik ya da hatalı görünüyor.`;
+  return `${label} için girilen değer geçersiz.`;
+}
+
 /**
- * docs/04 — 5 adımlı kullanıcı tanıma anketi.
+ * docs/04 — 4 adımlı kullanıcı tanıma anketi (eskiden "öğün sayısı" ve
+ * "fiziksel profil" ayrı adımlardı; anketi kısaltmak için Adım 1'de
+ * birleştirildi).
  *
  * Adımlar tek ekranda state ile ilerliyor; her adımdan geri dönülebiliyor ve
- * Adım 5'teki özetten herhangi bir adıma atlanabiliyor (doc: "Düzenle ile
- * herhangi bir adıma geri dönebilir").
+ * son adımdaki özetten herhangi bir adıma atlanabiliyor.
  */
 export default function NutritionSurveyScreen() {
   const { data } = useNutritionProfile();
   const save = useSaveNutritionProfile();
+  const preference = useThemeStore((s) => s.preference);
+  const palette = preference === "light" ? lightPalette : darkPalette;
+  const { duration } = useMotion();
 
   const [step, setStep] = useState(1);
   const [d, setD] = useState<Draft>(EMPTY);
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
-  const set = <K extends keyof Draft>(k: K, v: Draft[K]) => setD((p) => ({ ...p, [k]: v }));
+  // İlerleme çubuğu ve adım geçişi — her adım değişiminde yeniden oynatılır.
+  const progress = useSharedValue(1 / TOTAL_STEPS);
+  const stepFade = useSharedValue(0);
+  useEffect(() => {
+    progress.value = withTiming(step / TOTAL_STEPS, { duration: duration.standard });
+    stepFade.value = 0;
+    stepFade.value = withTiming(1, { duration: duration.standard });
+    // Yalnızca adım değiştiğinde tetiklensin.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step]);
+  const progressStyle = useAnimatedStyle(() => ({ width: `${progress.value * 100}%` }));
+  const stepStyle = useAnimatedStyle(() => ({
+    opacity: stepFade.value,
+    transform: [{ translateY: (1 - stepFade.value) * 10 }],
+  }));
 
-  // Adım 1-2 tamamsa makrolar canlı hesaplanıyor (docs/04 Adım 3).
+  const set = <K extends keyof Draft>(k: K, v: Draft[K]) => {
+    setD((p) => ({ ...p, [k]: v }));
+    setFieldErrors((prev) => {
+      if (!(k in prev)) return prev;
+      const next = { ...prev };
+      delete next[k as string];
+      return next;
+    });
+  };
+
+  // Antrenman hiç yapılmıyorsa tür seçimi anlamsız — soru kalkar ve önceki
+  // seçim temizlenir ki eski bir tür sessizce gönderilmesin.
+  function setTrainingFrequency(v: TrainingFrequency) {
+    setD((p) => ({ ...p, trainingFrequency: v, trainingTypes: v === "NEVER" ? [] : p.trainingTypes }));
+  }
+
+  // Adım 1 tamamsa makrolar canlı hesaplanıyor (docs/04 Adım 2).
   const computed = useMemo(() => {
     const age = num(d.age), h = num(d.heightCm), w = num(d.weightKg);
     if (!age || !h || !w || !d.trainingFrequency || !d.bodyGoal) return null;
@@ -126,8 +206,10 @@ export default function NutritionSurveyScreen() {
 
   async function submit() {
     setError(null);
+    setFieldErrors({});
     if (!shown) {
-      setError("Makro hedefleri hesaplanamadı. Adım 2'yi kontrol et.");
+      setError("Makro hedefleri hesaplanamadı. Adım 1'i kontrol et.");
+      setStep(1);
       return;
     }
 
@@ -142,7 +224,7 @@ export default function NutritionSurveyScreen() {
       age: Number(d.age), heightCm: Number(d.heightCm), weightKg: Number(d.weightKg),
       biologicalSex: d.biologicalSex,
       trainingFrequency: d.trainingFrequency!,
-      trainingType: d.trainingType ?? "Diğer",
+      trainingType: d.trainingTypes.length ? d.trainingTypes.join(", ") : "Diğer",
       bodyGoal: d.bodyGoal!,
       bodyFatPercent: num(d.bodyFatPercent),
       measurements,
@@ -159,7 +241,19 @@ export default function NutritionSurveyScreen() {
 
     const parsed = nutritionProfileSchema.safeParse(payload);
     if (!parsed.success) {
-      setError(parsed.error.issues[0]?.message ?? "Girdiğin bilgilerde bir sorun var.");
+      const nextFieldErrors: Record<string, string> = {};
+      for (const issue of parsed.error.issues) {
+        const key = String(issue.path.at(-1) ?? "");
+        const meta = FIELD_META[key];
+        if (meta) nextFieldErrors[key] = friendlyIssueMessage(issue, meta.label);
+      }
+      setFieldErrors(nextFieldErrors);
+
+      const firstIssue = parsed.error.issues[0];
+      const firstKey = String(firstIssue?.path.at(-1) ?? "");
+      const firstMeta = firstIssue ? FIELD_META[firstKey] : undefined;
+      setError(firstMeta ? friendlyIssueMessage(firstIssue, firstMeta.label) : "Girdiğin bilgilerde bir sorun var.");
+      setStep(firstMeta?.step ?? 1);
       return;
     }
 
@@ -174,138 +268,177 @@ export default function NutritionSurveyScreen() {
     }
   }
 
-  const step2Ready =
+  const step1Ready =
     !!num(d.age) && !!num(d.heightCm) && !!num(d.weightKg) && !!d.trainingFrequency && !!d.bodyGoal;
 
   return (
     <Screen edges={["bottom"]}>
       <ScrollView contentContainerClassName="gap-4 p-4 pb-8">
-        <View className="gap-1">
-          <Text variant="label" muted>
-            ADIM {step} / 5
-          </Text>
-          <Text variant="displayLg">
-            {["Öğün düzeni", "Fiziksel profil", "Makro hedefleri", "Sağlık bilgileri", "Özet"][step - 1]}
-          </Text>
+        <View className="gap-2">
+          <View className="flex-row items-baseline justify-between">
+            <Text variant="label" muted>
+              ADIM {step} / {TOTAL_STEPS}
+            </Text>
+          </View>
+          <View style={{ height: 6, borderRadius: 3, backgroundColor: rgb(palette.border), overflow: "hidden" }}>
+            <Animated.View
+              style={[{ height: 6, borderRadius: 3, backgroundColor: rgb(palette.accent) }, progressStyle]}
+            />
+          </View>
+          <Text variant="displayLg">{STEP_TITLES[step - 1]}</Text>
         </View>
 
-        {step === 1 ? (
-          <Card className="gap-4">
-            <ChoiceGroup
-              label="Günde kaç öğün?"
-              choices={["2", "3", "4", "5", "6"].map((v) => ({ value: v, label: v }))}
-              value={d.mealsPerDay}
-              onChange={(v) => set("mealsPerDay", v)}
-            />
-            {Number(d.mealsPerDay) > 3 ? (
-              <Text variant="bodySm" muted>
-                Öğün saatlerini ve saat bazlı hatırlatmaları daha sonra Beslenme
-                ekranından tanımlayabilirsin.
-              </Text>
-            ) : null}
-          </Card>
-        ) : null}
-
-        {step === 2 ? (
-          <Card className="gap-4">
-            <Field label="Yaş" value={d.age} onChangeText={(v) => set("age", v)} keyboardType="number-pad" maxLength={3} />
-            <Field label="Boy (cm)" value={d.heightCm} onChangeText={(v) => set("heightCm", v)} keyboardType="decimal-pad" maxLength={5} />
-            <Field label="Kilo (kg)" value={d.weightKg} onChangeText={(v) => set("weightKg", v)} keyboardType="decimal-pad" maxLength={5} />
-            <ChoiceGroup
-              label="Biyolojik cinsiyet"
-              optional
-              choices={[
-                { value: "MALE", label: "Erkek" },
-                { value: "FEMALE", label: "Kadın" },
-              ]}
-              value={d.biologicalSex}
-              onChange={(v) => set("biologicalSex", v)}
-            />
-            <Text variant="bodySm" muted>
-              Kalori hesabı bu bilgiye göre değişiyor. Belirtmezsen ortalama bir
-              değer kullanılır; sonuç yaklaşık ±83 kcal sapabilir.
-            </Text>
-            <ChoiceGroup label="Haftalık antrenman" choices={TRAINING_FREQ} value={d.trainingFrequency} onChange={(v) => set("trainingFrequency", v)} />
-            <ChoiceGroup label="Antrenman türü" choices={TRAINING_TYPES.map((t) => ({ value: t, label: t }))} value={d.trainingType} onChange={(v) => set("trainingType", v)} />
-            <ChoiceGroup label="Hedef" choices={BODY_GOALS} value={d.bodyGoal} onChange={(v) => set("bodyGoal", v)} />
-            <Field label="Yağ oranı (%)" optional value={d.bodyFatPercent} onChangeText={(v) => set("bodyFatPercent", v)} keyboardType="decimal-pad" maxLength={4} />
-            <View className="flex-row gap-2">
-              <View className="flex-1"><Field label="Boyun" optional value={d.neck} onChangeText={(v) => set("neck", v)} keyboardType="decimal-pad" maxLength={5} /></View>
-              <View className="flex-1"><Field label="Kol" optional value={d.arm} onChangeText={(v) => set("arm", v)} keyboardType="decimal-pad" maxLength={5} /></View>
-            </View>
-            <View className="flex-row gap-2">
-              <View className="flex-1"><Field label="Bel" optional value={d.waist} onChangeText={(v) => set("waist", v)} keyboardType="decimal-pad" maxLength={5} /></View>
-              <View className="flex-1"><Field label="Kalça" optional value={d.hip} onChangeText={(v) => set("hip", v)} keyboardType="decimal-pad" maxLength={5} /></View>
-            </View>
-          </Card>
-        ) : null}
-
-        {step === 3 ? (
-          <>
+        <Animated.View style={stepStyle} className="gap-4">
+          {step === 1 ? (
             <Card className="gap-4">
-              {!computed ? (
-                <Text variant="bodySm" className="text-danger">
-                  Önce Adım 2'deki zorunlu alanları doldur.
+              <ChoiceGroup
+                label="Günde kaç öğün?"
+                choices={["2", "3", "4", "5", "6"].map((v) => ({ value: v, label: v }))}
+                value={d.mealsPerDay}
+                onChange={(v) => set("mealsPerDay", v)}
+              />
+              {Number(d.mealsPerDay) > 3 ? (
+                <Text variant="bodySm" muted>
+                  Öğün saatlerini ve saat bazlı hatırlatmaları daha sonra Beslenme
+                  ekranından tanımlayabilirsin.
                 </Text>
-              ) : (
-                <>
-                  <View className="gap-1">
-                    <Text variant="label" muted>
-                      HESAPLANAN
-                    </Text>
-                    <Text variant="data" muted>
-                      BMR {computed.bmr} kcal · TDEE {computed.tdee} kcal
-                    </Text>
-                  </View>
-                  <Field label="Kalori (kcal)" value={d.macrosCustomized ? d.targetCalories : String(computed.targetCalories)} onChangeText={(v) => editMacro("targetCalories", v)} keyboardType="number-pad" maxLength={5} />
-                  <Field label="Protein (g)" value={d.macrosCustomized ? d.targetProteinG : String(computed.targetProteinG)} onChangeText={(v) => editMacro("targetProteinG", v)} keyboardType="decimal-pad" maxLength={5} />
-                  <Field label="Karbonhidrat (g)" value={d.macrosCustomized ? d.targetCarbsG : String(computed.targetCarbsG)} onChangeText={(v) => editMacro("targetCarbsG", v)} keyboardType="decimal-pad" maxLength={5} />
-                  <Field label="Yağ (g)" value={d.macrosCustomized ? d.targetFatG : String(computed.targetFatG)} onChangeText={(v) => editMacro("targetFatG", v)} keyboardType="decimal-pad" maxLength={5} />
-                  {d.macrosCustomized ? (
-                    <Button title="Varsayılana dön" variant="secondary" onPress={resetMacros} />
-                  ) : null}
-                </>
-              )}
-            </Card>
-            <Card>
-              <Text variant="bodySm" muted>
-                {MACRO_DISCLAIMER}
-              </Text>
-            </Card>
-          </>
-        ) : null}
+              ) : null}
 
-        {step === 4 ? (
-          <>
-            <Card className="gap-4">
-              <Field label="Kan grubu" optional value={d.bloodType} onChangeText={(v) => set("bloodType", v)} maxLength={8} placeholder="0 Rh+" />
-              <Field label="Şeker ihtiyaç oranı" optional value={d.sugarNeedRate} onChangeText={(v) => set("sugarNeedRate", v)} maxLength={120} hint="Biliyorsan serbestçe yazabilirsin." />
-              <Field label="Son kan tahlili tarihi" optional value={d.lastBloodTestDate} onChangeText={(v) => set("lastBloodTestDate", v)} placeholder="2026-01-15" maxLength={10} />
-            </Card>
-            <Card className="gap-3">
-              <Text variant="title">Kan tahlili hatırlatması</Text>
-              <Text variant="bodySm" muted>
-                Hatırlatma kurmak istersen, yasal uyarıyı da içeren ayrı bir
-                adımdan geçeceksin. Anketi bitirdikten sonra da kurabilirsin.
-              </Text>
-              <Link href="/blood-test-reminder" asChild>
-                <Button title="Hatırlatmayı ayarla" variant="secondary" />
-              </Link>
-            </Card>
-          </>
-        ) : null}
+              <View className="h-px bg-border" />
 
-        {step === 5 ? (
-          <Card className="gap-3">
-            <Row label="Öğün sayısı" value={d.mealsPerDay} onEdit={() => setStep(1)} />
-            <Row label="Yaş / Boy / Kilo" value={`${d.age} · ${d.heightCm} cm · ${d.weightKg} kg`} onEdit={() => setStep(2)} />
-            <Row label="Antrenman" value={`${TRAINING_FREQ.find((t) => t.value === d.trainingFrequency)?.label ?? "—"} · ${d.trainingType ?? "—"}`} onEdit={() => setStep(2)} />
-            <Row label="Hedef" value={BODY_GOALS.find((b) => b.value === d.bodyGoal)?.label ?? "—"} onEdit={() => setStep(2)} />
-            <Row label="Kalori" value={shown ? `${Math.round(shown.targetCalories)} kcal` : "—"} onEdit={() => setStep(3)} />
-            <Row label="Makrolar" value={shown ? `P ${shown.targetProteinG} · K ${shown.targetCarbsG} · Y ${shown.targetFatG} g` : "—"} onEdit={() => setStep(3)} />
-            <Row label="Kan grubu" value={d.bloodType || "—"} onEdit={() => setStep(4)} />
-          </Card>
-        ) : null}
+              <Field label="Yaş" value={d.age} onChangeText={(v) => set("age", v)} keyboardType="number-pad" maxLength={3} error={fieldErrors.age} />
+              <Field label="Boy (cm)" value={d.heightCm} onChangeText={(v) => set("heightCm", v)} keyboardType="decimal-pad" maxLength={5} error={fieldErrors.heightCm} />
+              <Field label="Kilo (kg)" value={d.weightKg} onChangeText={(v) => set("weightKg", v)} keyboardType="decimal-pad" maxLength={5} error={fieldErrors.weightKg} />
+              <ChoiceGroup
+                label="Biyolojik cinsiyet"
+                optional
+                choices={[
+                  { value: "MALE", label: "Erkek" },
+                  { value: "FEMALE", label: "Kadın" },
+                ]}
+                value={d.biologicalSex}
+                onChange={(v) => set("biologicalSex", v)}
+              />
+              <Text variant="bodySm" muted>
+                Kalori hesabı bu bilgiye göre değişiyor. Belirtmezsen ortalama bir
+                değer kullanılır; sonuç yaklaşık ±83 kcal sapabilir.
+              </Text>
+              <ChoiceGroup
+                label="Haftalık antrenman"
+                choices={TRAINING_FREQ}
+                value={d.trainingFrequency}
+                onChange={setTrainingFrequency}
+              />
+              {d.trainingFrequency && d.trainingFrequency !== "NEVER" ? (
+                <MultiChoiceGroup
+                  label="Antrenman türü"
+                  optional
+                  hint="Birden fazla seçebilirsin."
+                  choices={TRAINING_TYPES.map((t) => ({ value: t, label: t }))}
+                  value={d.trainingTypes}
+                  onChange={(v) => set("trainingTypes", v)}
+                />
+              ) : null}
+              <ChoiceGroup label="Hedef" choices={BODY_GOALS} value={d.bodyGoal} onChange={(v) => set("bodyGoal", v)} />
+              <Field label="Yağ oranı (%)" optional value={d.bodyFatPercent} onChangeText={(v) => set("bodyFatPercent", v)} keyboardType="decimal-pad" maxLength={4} error={fieldErrors.bodyFatPercent} />
+              <View className="flex-row gap-2">
+                <View className="flex-1"><Field label="Boyun" optional value={d.neck} onChangeText={(v) => set("neck", v)} keyboardType="decimal-pad" maxLength={5} error={fieldErrors.neck} /></View>
+                <View className="flex-1"><Field label="Kol" optional value={d.arm} onChangeText={(v) => set("arm", v)} keyboardType="decimal-pad" maxLength={5} error={fieldErrors.arm} /></View>
+              </View>
+              <View className="flex-row gap-2">
+                <View className="flex-1"><Field label="Bel" optional value={d.waist} onChangeText={(v) => set("waist", v)} keyboardType="decimal-pad" maxLength={5} error={fieldErrors.waist} /></View>
+                <View className="flex-1"><Field label="Kalça" optional value={d.hip} onChangeText={(v) => set("hip", v)} keyboardType="decimal-pad" maxLength={5} error={fieldErrors.hip} /></View>
+              </View>
+            </Card>
+          ) : null}
+
+          {step === 2 ? (
+            <>
+              <Card className="gap-4">
+                {!computed ? (
+                  <Text variant="bodySm" className="text-danger">
+                    Önce Adım 1&apos;deki zorunlu alanları doldur.
+                  </Text>
+                ) : (
+                  <>
+                    <View className="gap-1">
+                      <Text variant="label" muted>
+                        HESAPLANAN
+                      </Text>
+                      <Text variant="data" muted>
+                        BMR {computed.bmr} kcal · TDEE {computed.tdee} kcal
+                      </Text>
+                    </View>
+                    <Field label="Kalori (kcal)" value={d.macrosCustomized ? d.targetCalories : String(computed.targetCalories)} onChangeText={(v) => editMacro("targetCalories", v)} keyboardType="number-pad" maxLength={5} error={fieldErrors.targetCalories} />
+                    <Field label="Protein (g)" value={d.macrosCustomized ? d.targetProteinG : String(computed.targetProteinG)} onChangeText={(v) => editMacro("targetProteinG", v)} keyboardType="decimal-pad" maxLength={5} error={fieldErrors.targetProteinG} />
+                    <Field label="Karbonhidrat (g)" value={d.macrosCustomized ? d.targetCarbsG : String(computed.targetCarbsG)} onChangeText={(v) => editMacro("targetCarbsG", v)} keyboardType="decimal-pad" maxLength={5} error={fieldErrors.targetCarbsG} />
+                    <Field label="Yağ (g)" value={d.macrosCustomized ? d.targetFatG : String(computed.targetFatG)} onChangeText={(v) => editMacro("targetFatG", v)} keyboardType="decimal-pad" maxLength={5} error={fieldErrors.targetFatG} />
+                    {d.macrosCustomized ? (
+                      <Button title="Varsayılana dön" variant="secondary" onPress={resetMacros} />
+                    ) : null}
+                  </>
+                )}
+              </Card>
+              <Card>
+                <Text variant="bodySm" muted>
+                  {MACRO_DISCLAIMER}
+                </Text>
+              </Card>
+            </>
+          ) : null}
+
+          {step === 3 ? (
+            <>
+              <Card className="gap-4">
+                <Field label="Kan grubu" optional value={d.bloodType} onChangeText={(v) => set("bloodType", v)} maxLength={8} placeholder="0 Rh+" error={fieldErrors.bloodType} />
+                <Field
+                  label="Şeker ihtiyaç oranı"
+                  optional
+                  value={d.sugarNeedRate}
+                  onChangeText={(v) => set("sugarNeedRate", v)}
+                  maxLength={120}
+                  placeholder="ör. 1 ünite / 10g karbonhidrat"
+                  hint="Diyabet takibi yapanlar için — doktorunun sana verdiği insülin/karbonhidrat oranını biliyorsan buraya yazabilirsin. Bilmiyorsan boş bırak."
+                  error={fieldErrors.sugarNeedRate}
+                />
+                <DatePickerField
+                  label="Son kan tahlili tarihi"
+                  optional
+                  value={d.lastBloodTestDate}
+                  onChange={(v) => set("lastBloodTestDate", v)}
+                  error={fieldErrors.lastBloodTestDate}
+                />
+              </Card>
+              <Card className="gap-2">
+                <Text variant="title">Kan tahlili hatırlatması</Text>
+                <Text variant="bodySm" muted>
+                  Anketi bitirip profilini kaydettikten sonra, Ayarlar &gt; Kan
+                  tahlili&apos;nden yasal uyarıyı onaylayıp hatırlatma kurabilirsin.
+                </Text>
+              </Card>
+            </>
+          ) : null}
+
+          {step === 4 ? (
+            <>
+              <View className="flex-row items-center gap-2 px-1">
+                <PartyPopper size={20} strokeWidth={1.75} color={rgb(palette.accent)} />
+                <Text variant="bodySm" muted>
+                  Son adım — göz atıp onayla, Beslenme takibin hemen başlasın.
+                </Text>
+              </View>
+              <Card className="gap-3">
+                <Row label="Öğün sayısı" value={d.mealsPerDay} onEdit={() => setStep(1)} />
+                <Row label="Yaş / Boy / Kilo" value={`${d.age} · ${d.heightCm} cm · ${d.weightKg} kg`} onEdit={() => setStep(1)} />
+                <Row label="Antrenman" value={`${TRAINING_FREQ.find((t) => t.value === d.trainingFrequency)?.label ?? "—"} · ${d.trainingTypes.length ? d.trainingTypes.join(", ") : "—"}`} onEdit={() => setStep(1)} />
+                <Row label="Hedef" value={BODY_GOALS.find((b) => b.value === d.bodyGoal)?.label ?? "—"} onEdit={() => setStep(1)} />
+                <Row label="Kalori" value={shown ? `${Math.round(shown.targetCalories)} kcal` : "—"} onEdit={() => setStep(2)} />
+                <Row label="Makrolar" value={shown ? `P ${shown.targetProteinG} · K ${shown.targetCarbsG} · Y ${shown.targetFatG} g` : "—"} onEdit={() => setStep(2)} />
+                <Row label="Kan grubu" value={d.bloodType || "—"} onEdit={() => setStep(3)} last />
+              </Card>
+            </>
+          ) : null}
+        </Animated.View>
 
         {error ? (
           <Text variant="bodySm" className="text-danger">
@@ -317,11 +450,11 @@ export default function NutritionSurveyScreen() {
           {step > 1 ? (
             <Button title="Geri" variant="secondary" onPress={() => setStep(step - 1)} className="flex-1" />
           ) : null}
-          {step < 5 ? (
+          {step < TOTAL_STEPS ? (
             <Button
               title="Devam"
               onPress={() => setStep(step + 1)}
-              disabled={step === 2 && !step2Ready}
+              disabled={step === 1 && !step1Ready}
               className="flex-1"
             />
           ) : (
@@ -339,9 +472,9 @@ export default function NutritionSurveyScreen() {
   );
 }
 
-function Row({ label, value, onEdit }: { label: string; value: string; onEdit: () => void }) {
+function Row({ label, value, onEdit, last }: { label: string; value: string; onEdit: () => void; last?: boolean }) {
   return (
-    <View className="flex-row items-center justify-between gap-3 border-b border-border pb-3">
+    <View className={cn("flex-row items-center justify-between gap-3 pb-3", !last && "border-b border-border")}>
       <View className="flex-1">
         <Text variant="label" muted>
           {label.toLocaleUpperCase("tr-TR")}

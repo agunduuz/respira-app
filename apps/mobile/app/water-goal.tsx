@@ -6,9 +6,10 @@ import {
 } from "@respira/shared-types";
 import { router } from "expo-router";
 import { useEffect, useState } from "react";
-import { ScrollView, View } from "react-native";
+import { KeyboardAvoidingView, Platform, ScrollView, View } from "react-native";
 
 import { Field } from "@/components/nutrition/Field";
+import { TimePickerField } from "@/components/nutrition/TimePickerField";
 import { Button, Card, Screen, Text } from "@/components/ui";
 import { useNutritionProfile } from "@/lib/nutrition-queries";
 import { useSaveWaterGoal, useWaterGoal } from "@/lib/water-queries";
@@ -28,11 +29,14 @@ export default function WaterGoalScreen() {
   const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
+    // Sunucudan gelen kayıtlı hedefi bir kerelik düzenlenebilir yerel forma
+    // kopyalıyoruz — react-query verisini forma senkronlamanın standart yolu.
     if (hydrated) return;
     const goal = data?.goal;
     const knownWeight = nutrition?.profile?.weightKg;
 
     if (goal) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setTarget(String(goal.dailyTargetMl));
       setWakeTime(goal.wakeTime);
       setSleepTime(goal.sleepTime);
@@ -85,7 +89,8 @@ export default function WaterGoalScreen() {
 
   return (
     <Screen edges={["top"]}>
-      <ScrollView contentContainerClassName="gap-6 p-4 pb-12">
+      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} className="flex-1">
+      <ScrollView contentContainerClassName="gap-6 p-4 pb-12" keyboardShouldPersistTaps="handled">
         <View className="gap-1">
           <Text variant="label" muted>
             SU HEDEFİ
@@ -130,10 +135,10 @@ export default function WaterGoalScreen() {
           </Text>
           <View className="flex-row gap-3">
             <View className="flex-1">
-              <Field label="Uyanma" value={wakeTime} onChangeText={setWakeTime} placeholder="08:00" />
+              <TimePickerField label="Uyanma" value={wakeTime} onChange={setWakeTime} />
             </View>
             <View className="flex-1">
-              <Field label="Uyku" value={sleepTime} onChangeText={setSleepTime} placeholder="23:00" />
+              <TimePickerField label="Uyku" value={sleepTime} onChange={setSleepTime} />
             </View>
           </View>
         </Card>
@@ -146,6 +151,7 @@ export default function WaterGoalScreen() {
 
         <Button title="Kaydet" loading={save.isPending} onPress={submit} />
       </ScrollView>
+      </KeyboardAvoidingView>
     </Screen>
   );
 }

@@ -7,9 +7,11 @@ import {
   type BreathingTechnique,
 } from "@respira/shared-types";
 import { router } from "expo-router";
-import { useState } from "react";
-import { ScrollView, View } from "react-native";
+import { Bell, HeartPulse, Wind } from "lucide-react-native";
+import { useEffect, useState } from "react";
+import { ActivityIndicator, ScrollView, View } from "react-native";
 
+import { FeatureIntro } from "@/components/FeatureIntro";
 import { ChoiceGroup } from "@/components/nutrition/ChoiceGroup";
 import { Button, Card, Screen, Text } from "@/components/ui";
 import {
@@ -19,12 +21,13 @@ import {
   scheduleRepeatingReminder,
 } from "@/lib/notifications";
 import { useSaveStressProfile, useStressProfile, useTodaySessions } from "@/lib/stress-queries";
+import { useStressIntroStore } from "@/lib/stress-intro-store";
 
 const LEVEL_CHOICES = [
   { value: "1", label: "1 · Sakin" },
-  { value: "2", label: "2" },
+  { value: "2", label: "2 · Hafif gergin" },
   { value: "3", label: "3 · Orta" },
-  { value: "4", label: "4" },
+  { value: "4", label: "4 · Gergin" },
   { value: "5", label: "5 · Çok gergin" },
 ] as const;
 
@@ -35,6 +38,12 @@ export default function StressScreen() {
   const profile = profileData?.profile ?? null;
   const { data: sessions } = useTodaySessions(true);
   const saveProfile = useSaveStressProfile();
+
+  const hasSeenIntro = useStressIntroStore((s) => s.hasSeenIntro);
+  const introHydrated = useStressIntroStore((s) => s.hydrated);
+  useEffect(() => {
+    void useStressIntroStore.getState().hydrate();
+  }, []);
 
   const [level, setLevel] = useState<string | null>(null);
   const [frequency, setFrequency] = useState<string | null>(
@@ -75,6 +84,32 @@ export default function StressScreen() {
   }
 
   const today = sessions?.today;
+
+  if (!introHydrated) {
+    return (
+      <Screen className="items-center justify-center">
+        <ActivityIndicator />
+      </Screen>
+    );
+  }
+
+  if (!hasSeenIntro) {
+    return (
+      <FeatureIntro
+        icon={Wind}
+        title="Bir nefes molası ver"
+        subtitle="Anlık stres seviyeni işaretle, sana uygun tekniği önerelim — istersen doğrudan bir teknik seç."
+        benefits={[
+          { icon: HeartPulse, title: "Stres seviyeni işaretle", body: "Kısa bir soru, en uygun tekniği önerelim." },
+          { icon: Wind, title: "3 farklı teknik", body: "Diyafram nefesi, kutu nefesi ve 4-7-8 tekniği arasından seç." },
+          { icon: Bell, title: "Günlük hatırlatma", body: "İstediğin sıklıkta kısa mola hatırlatmaları al." },
+        ]}
+        ctaLabel="Başlayalım"
+        ctaIcon={Wind}
+        onPress={() => useStressIntroStore.getState().markSeen()}
+      />
+    );
+  }
 
   return (
     <Screen edges={["top"]}>

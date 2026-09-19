@@ -1,7 +1,8 @@
 import { Link, router } from "expo-router";
-import { Star } from "lucide-react-native";
+import { BarChart3, ChevronRight, Flame, Lightbulb, ListChecks, PieChart, Star, UtensilsCrossed } from "lucide-react-native";
 import { ActivityIndicator, Pressable, ScrollView, View } from "react-native";
 
+import { FeatureIntro } from "@/components/FeatureIntro";
 import { Button, Card, Screen, Text } from "@/components/ui";
 import {
   useDayMeals,
@@ -23,6 +24,9 @@ function nextMealLabel(count: number, mealsPerDay: number): string {
 }
 
 export default function NutritionScreen() {
+  const preference = useThemeStore((s) => s.preference);
+  const palette = preference === "light" ? lightPalette : darkPalette;
+
   const date = todayKey();
   const { data: profileData, isPending: profilePending } = useNutritionProfile();
   const { data: day, isPending: dayPending } = useDayMeals(date);
@@ -42,17 +46,20 @@ export default function NutritionScreen() {
   // docs/04: anket tamamlanmadan takip başlamaz.
   if (!profile) {
     return (
-      <Screen edges={["top"]} className="justify-center p-6">
-        <Card className="gap-3">
-          <Text variant="title">Beslenme takibine başla</Text>
-          <Text variant="bodySm" muted>
-            Sana uygun kalori ve makro hedeflerini hesaplayabilmemiz için kısa
-            bir anket dolduralım. 5 adım sürüyor ve istediğin zaman
-            değiştirebilirsin.
-          </Text>
-          <Button title="Ankete başla" onPress={() => router.push("/nutrition-survey")} />
-        </Card>
-      </Screen>
+      <FeatureIntro
+        icon={UtensilsCrossed}
+        title="Beslenme hedeflerini kuralım"
+        subtitle="Kalori ve makro hedeflerini hesaplamak için kısa bir anket dolduralım."
+        benefits={[
+          { icon: Flame, title: "Günlük kalori hedefi", body: "Boy, kilo ve aktivite seviyene göre hesaplanır." },
+          { icon: PieChart, title: "Makro takibi", body: "Protein, karbonhidrat ve yağ dengeni günlük gör." },
+          { icon: Lightbulb, title: "Öğün önerileri", body: "Geçmiş günlerine göre kişiselleştirilmiş tavsiyeler." },
+        ]}
+        ctaLabel="Ankete başla"
+        ctaIcon={ListChecks}
+        onPress={() => router.push("/nutrition-survey")}
+        caption="4 adım sürüyor, istediğin zaman değiştirebilirsin."
+      />
     );
   }
 
@@ -139,7 +146,30 @@ export default function NutritionScreen() {
         </Card>
 
         <Link href="/nutrition-report" asChild>
-          <Button title="Raporlar" variant="secondary" />
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Raporlar"
+            style={{ minHeight: touchTarget.min }}
+            className="flex-row items-center gap-3 rounded-lg border border-border bg-surface px-4"
+          >
+            {({ pressed }) => (
+              <View className="flex-1 flex-row items-center gap-3" style={{ opacity: pressed ? 0.65 : 1 }}>
+                <View
+                  className="items-center justify-center rounded-full bg-elevated"
+                  style={{ width: 36, height: 36 }}
+                >
+                  <BarChart3 size={18} strokeWidth={1.75} color={rgb(palette.accent)} />
+                </View>
+                <View className="flex-1 gap-0.5 py-3">
+                  <Text variant="label">Raporlar</Text>
+                  <Text variant="bodySm" muted>
+                    Günlük/haftalık/aylık hedef karşılaştırması ve protein trendi
+                  </Text>
+                </View>
+                <ChevronRight size={18} strokeWidth={1.75} color={rgb(palette.textMuted)} />
+              </View>
+            )}
+          </Pressable>
         </Link>
 
         <Text variant="bodySm" muted>

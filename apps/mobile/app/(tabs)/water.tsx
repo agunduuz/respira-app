@@ -1,8 +1,10 @@
 import { WATER_QUICK_ADD_ML, computeExpectedIntakeMl, computeHourlyTargetMl } from "@respira/shared-types";
 import { router } from "expo-router";
+import { Bell, Droplet, Target, Trash2, Zap } from "lucide-react-native";
 import { useEffect, useState } from "react";
-import { ActivityIndicator, ScrollView, TextInput, View } from "react-native";
+import { ActivityIndicator, Pressable, ScrollView, TextInput, View } from "react-native";
 
+import { FeatureIntro } from "@/components/FeatureIntro";
 import { WaterWave } from "@/components/WaterWave";
 import { Button, Card, Screen, Text } from "@/components/ui";
 import {
@@ -11,7 +13,13 @@ import {
   ensurePermission,
   scheduleRepeatingReminder,
 } from "@/lib/notifications";
-import { useLogIntake, useTodayIntake, useWaterGoal } from "@/lib/water-queries";
+import {
+  useDeleteIntake,
+  useLogIntake,
+  useTodayIntake,
+  useWaterGoal,
+  type WaterIntakeLogRow,
+} from "@/lib/water-queries";
 import { useThemeStore } from "@/theme/theme-store";
 import { darkPalette, lightPalette, touchTarget } from "@/theme/tokens";
 
@@ -22,6 +30,7 @@ export default function WaterScreen() {
   const goal = goalData?.goal ?? null;
   const { data: intake } = useTodayIntake(!!goal);
   const log = useLogIntake();
+  const del = useDeleteIntake();
 
   const preference = useThemeStore((s) => s.preference);
   const palette = preference === "light" ? lightPalette : darkPalette;
@@ -47,16 +56,19 @@ export default function WaterScreen() {
 
   if (!goal) {
     return (
-      <Screen edges={["top"]} className="justify-center p-6">
-        <Card className="gap-3">
-          <Text variant="title">Su hedefini belirle</Text>
-          <Text variant="bodySm" muted>
-            Kilona göre günlük bir hedef önerelim; istersen kendi hedefini de
-            girebilirsin.
-          </Text>
-          <Button title="Hedefi ayarla" onPress={() => router.push("/water-goal")} />
-        </Card>
-      </Screen>
+      <FeatureIntro
+        icon={Droplet}
+        title="Su hedefini belirle"
+        subtitle="Kilona göre günlük bir hedef önerelim; istersen kendi hedefini de girebilirsin."
+        benefits={[
+          { icon: Target, title: "Kişisel günlük hedef", body: "Kilona göre otomatik hesaplanır, istersen değiştirirsin." },
+          { icon: Zap, title: "Tek dokunuşla ekle", body: "Bardak, şişe gibi hazır miktarlarla hızlıca kaydet." },
+          { icon: Bell, title: "Saat başı hatırlatma", body: "Yalnızca uyanık olduğun saatlerde, nazikçe hatırlatır." },
+        ]}
+        ctaLabel="Hedefi ayarla"
+        ctaIcon={Target}
+        onPress={() => router.push("/water-goal")}
+      />
     );
   }
 
@@ -145,8 +157,10 @@ export default function WaterScreen() {
                 key={q.ml}
                 title={q.label}
                 variant="secondary"
+                icon={Droplet}
+                iconColor={rgb(palette.accent)}
                 onPress={() => addAmount(q.ml)}
-                className="flex-1"
+                className="w-[48%]"
               />
             ))}
           </View>
@@ -163,6 +177,23 @@ export default function WaterScreen() {
             <Button title="Ekle" variant="secondary" onPress={addCustom} />
           </View>
         </Card>
+
+        {intake?.logs && intake.logs.length > 0 ? (
+          <Card className="w-full gap-3">
+            <Text variant="title">Bugünün girişleri</Text>
+            {intake.logs.map((entry, i) => (
+              <IntakeRow
+                key={entry.id}
+                log={entry}
+                last={i === intake.logs.length - 1}
+                onDelete={() => del.mutate(entry.id)}
+                deleting={del.isPending && del.variables === entry.id}
+                mutedColor={rgb(palette.textMuted)}
+                dangerColor={rgb(palette.danger)}
+              />
+            ))}
+          </Card>
+        ) : null}
 
         <Card className="w-full gap-3">
           <Text variant="title">Hatırlatmalar</Text>
@@ -195,5 +226,55 @@ export default function WaterScreen() {
         <Button title="Hedefi düzenle" variant="secondary" onPress={() => router.push("/water-goal")} />
       </ScrollView>
     </Screen>
+  );
+}
+
+/** Yanlış eklenen bir girişi geri almak için — her satırda tek dokunuşla sil. */
+function IntakeRow({
+  log,
+  last,
+  onDelete,
+  deleting,
+  mutedColor,
+  dangerColor,
+}: {
+  log: WaterIntakeLogRow;
+  last: boolean;
+  onDelete: () => void;
+  deleting: boolean;
+  mutedColor: string;
+  dangerColor: string;
+}) {
+  const time = new Date(log.loggedAt).toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" });
+
+  return (
+    <View
+      className={`flex-row items-center justify-between gap-3 pb-3${last ? "" : " border-b border-border"}`}
+    >
+      <View className="flex-row items-baseline gap-2">
+        <Text variant="body">{log.amountMl}ml</Text>
+        <Text variant="bodySm" muted>
+          {time}
+        </Text>
+      </View>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={`${log.amountMl}ml girişini sil`}
+        onPress={onDelete}
+        disabled={deleting}
+        hitSlop={10}
+        style={{ minWidth: touchTarget.min, minHeight: touchTarget.min }}
+        className="items-center justify-center"
+      >
+        {({ pressed }) => (
+          <Trash2
+            size={18}
+            strokeWidth={1.75}
+            color={deleting ? mutedColor : dangerColor}
+            opacity={pressed ? 0.65 : 1}
+          />
+        )}
+      </Pressable>
+    </View>
   );
 }

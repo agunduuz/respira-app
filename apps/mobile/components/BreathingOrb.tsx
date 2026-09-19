@@ -18,10 +18,14 @@ const skia = isSkiaUsable()
   ? (require("@shopify/react-native-skia") as typeof import("@shopify/react-native-skia"))
   : null;
 
-const SIZE = 260;
-const CENTER = SIZE / 2;
 const MIN_R = 62;
 const MAX_R = 108;
+// Dış hale en fazla radius + 18 + 10 = MAX_R + 28'e kadar genişliyor (bkz.
+// haloRadius aşağıda) — tuval bunu tam olarak karşılamazsa hale kenarlardan
+// kırpılıp köşeli/kesik görünüyordu. SIZE bu üst sınırı + biraz pay içerir.
+const HALO_MAX_R = MAX_R + 28;
+const SIZE = HALO_MAX_R * 2 + 16;
+const CENTER = SIZE / 2;
 
 interface Props {
   /** docs/07 — seçilen tekniğin gerçek faz süreleri (inhale/hold/exhale). */

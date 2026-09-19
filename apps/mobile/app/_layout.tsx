@@ -21,6 +21,7 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import { AuthGate } from "@/components/AuthGate";
 import { initAuth } from "@/lib/auth-store";
 import { loadSkia } from "@/lib/skia-loader";
+import { useWelcomeStore } from "@/lib/welcome-store";
 import { initTheme, useThemeStore } from "@/theme/theme-store";
 import { darkPalette, lightPalette } from "@/theme/tokens";
 
@@ -75,6 +76,10 @@ export default function RootLayout() {
 
   // Kayıtlı oturumu expo-secure-store'dan oku ve değişiklikleri dinle.
   useEffect(() => initAuth(), []);
+  // Karşılama akışının daha önce görülüp görülmediğini AsyncStorage'dan oku.
+  useEffect(() => {
+    void useWelcomeStore.getState().hydrate();
+  }, []);
 
   if (!loaded || !skiaReady) {
     return null;
@@ -129,9 +134,13 @@ function RootLayoutNav() {
                 screenOptions={{
                   contentStyle: { backgroundColor: rgb(palette.bg) },
                   headerTitleStyle: { fontFamily: "SpaceGrotesk_600SemiBold" },
+                  // Route grup adları ("(tabs)" gibi) geri butonunda metin
+                  // olarak sızmasın diye geri butonu sadece ok işareti gösterir.
+                  headerBackButtonDisplayMode: "minimal",
                 }}
               >
                 <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+                <Stack.Screen name="(welcome)" options={{ headerShown: false }} />
                 <Stack.Screen name="(auth)" options={{ headerShown: false }} />
                 <Stack.Screen name="(onboarding)" options={{ headerShown: false }} />
                 <Stack.Screen

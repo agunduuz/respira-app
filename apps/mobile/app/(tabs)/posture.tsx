@@ -1,7 +1,9 @@
 import { router } from "expo-router";
+import { Bell, PersonStanding, Sparkles, TrendingUp } from "lucide-react-native";
 import { useEffect, useState } from "react";
 import { ActivityIndicator, ScrollView, View } from "react-native";
 
+import { FeatureIntro } from "@/components/FeatureIntro";
 import { ProgressRing } from "@/components/ProgressRing";
 import { Button, Card, Screen, Text } from "@/components/ui";
 import { formatRemaining } from "@/lib/eye-strain-timer";
@@ -25,7 +27,7 @@ const rgb = (c: string) => `rgb(${c.split(" ").join(", ")})`;
 export default function PostureScreen() {
   const { data: profileData, isPending } = usePostureProfile();
   const profile = profileData?.profile ?? null;
-  const { data: session } = usePostureSession(!!profile);
+  const { data: session, isPending: sessionPending } = usePostureSession(!!profile);
   const { data: breaks } = useTodayBreaks(!!profile);
   const record = useRecordBreak();
 
@@ -51,9 +53,12 @@ export default function PostureScreen() {
   const progress = current ? Math.min(1, elapsed / current.seconds) : 0;
 
   // Hareketin süresi dolunca sıradakine geç; set bitince tamamlandı say.
+  // Bu bir zamanlayıcıya bağlı durum makinesi — dış "now" sayacı değiştikçe
+  // adım ilerlemesi kaçınılmaz olarak effect içinde tetikleniyor.
   useEffect(() => {
     if (!running || !current || remaining > 0) return;
     if (index + 1 < exercises.length) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setIndex(index + 1);
       setStartedAt(Date.now());
     } else {
@@ -109,16 +114,19 @@ export default function PostureScreen() {
 
   if (!profile) {
     return (
-      <Screen edges={["top"]} className="justify-center p-6">
-        <Card className="gap-3">
-          <Text variant="title">Duruş molalarına başla</Text>
-          <Text variant="bodySm" muted>
-            Çalışma şeklini ve saat başı ayırabileceğin süreyi söyle; sana
-            ortamına uygun, ekipman gerektirmeyen hareketler önerelim.
-          </Text>
-          <Button title="Formu doldur" onPress={() => router.push("/posture-form")} />
-        </Card>
-      </Screen>
+      <FeatureIntro
+        icon={PersonStanding}
+        title="Duruş molalarına başla"
+        subtitle="Çalışma şeklini ve saat başı ayırabileceğin süreyi söyle; sana ortamına uygun, ekipman gerektirmeyen hareketler önerelim."
+        benefits={[
+          { icon: Sparkles, title: "Kişiye özel set", body: "Çalışma şekline ve süren göre hazırlanan hareketler." },
+          { icon: Bell, title: "Saat başı hatırlatma", body: "Yalnızca mesai saatlerinde, nazikçe hatırlatır." },
+          { icon: TrendingUp, title: "İlerleme takibi", body: "Tamamlanan/atlanan molalarını günlük gör." },
+        ]}
+        ctaLabel="Formu doldur"
+        ctaIcon={Sparkles}
+        onPress={() => router.push("/posture-form")}
+      />
     );
   }
 
@@ -207,6 +215,18 @@ export default function PostureScreen() {
               </View>
             ))}
             <Button title="Molaya başla" onPress={start} />
+          </Card>
+        ) : sessionPending ? (
+          // Set verisi biraz gecikebiliyor — yer tutucu olmadan kart aniden
+          // belirip layout'u sıçratıyordu, bu yüzden aynı boyutta bir iskelet.
+          <Card className="gap-3">
+            <View className="flex-row items-baseline gap-2">
+              <Text variant="title">Sıradaki set</Text>
+              <ActivityIndicator size="small" color={rgb(palette.accent)} />
+            </View>
+            <Text variant="bodySm" muted>
+              Sana uygun hareketler hazırlanıyor…
+            </Text>
           </Card>
         ) : null}
 

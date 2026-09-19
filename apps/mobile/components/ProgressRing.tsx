@@ -53,12 +53,31 @@ export function ProgressRing({
     );
   }
 
-  const { Canvas, Circle, Path, Skia } = skia;
+  const { Canvas, Circle, Path, RadialGradient, Skia, vec } = skia;
   const path = Skia.Path.Make();
   path.addCircle(center, center, radius);
 
+  // Halkanın arkasında yumuşak bir ambiyans halesi — boşta bile hafifçe
+  // görünür (0 ilerlemede bile tamamen sönük durmasın diye), ilerledikçe
+  // güçlenir. BreathingOrb'daki halo+RadialGradient tekniğinin aynısı.
+  const glowPad = strokeWidth * 2.5;
+  const glowSize = size + glowPad * 2;
+  const glowCenter = glowSize / 2;
+  const haloRadius = radius + strokeWidth * (1.4 + clamped * 0.6);
+  const haloOpacity = 0.1 + clamped * 0.22;
+
   return (
     <View style={{ width: size, height: size }}>
+      <View
+        pointerEvents="none"
+        style={{ position: "absolute", width: glowSize, height: glowSize, left: -glowPad, top: -glowPad }}
+      >
+        <Canvas style={{ width: glowSize, height: glowSize }}>
+          <Circle cx={glowCenter} cy={glowCenter} r={haloRadius} opacity={haloOpacity}>
+            <RadialGradient c={vec(glowCenter, glowCenter)} r={haloRadius} colors={[color, "transparent"]} />
+          </Circle>
+        </Canvas>
+      </View>
       <Canvas style={{ width: size, height: size, position: "absolute" }}>
         <Circle
           cx={center}

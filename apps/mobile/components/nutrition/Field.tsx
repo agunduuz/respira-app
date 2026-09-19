@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { TextInput, View, type TextInputProps } from "react-native";
 
 import { Text } from "@/components/ui";
@@ -12,7 +13,9 @@ interface Props extends TextInputProps {
   error?: string | null;
 }
 
-export function Field({ label, hint, optional, error, className, ...rest }: Props) {
+export function Field({ label, hint, optional, error, className, onFocus, onBlur, ...rest }: Props) {
+  const [focused, setFocused] = useState(false);
+
   return (
     <View className="gap-2">
       <View className="flex-row items-baseline gap-2">
@@ -30,9 +33,17 @@ export function Field({ label, hint, optional, error, className, ...rest }: Prop
         style={{ minHeight: touchTarget.min }}
         className={cn(
           "rounded-md border bg-surface px-4 font-data text-data text-text",
-          error ? "border-danger" : "border-border-strong",
+          error ? "border-danger" : focused ? "border-accent" : "border-border-strong",
           className
         )}
+        onFocus={(e) => {
+          setFocused(true);
+          onFocus?.(e);
+        }}
+        onBlur={(e) => {
+          setFocused(false);
+          onBlur?.(e);
+        }}
         {...rest}
       />
       {hint ? (

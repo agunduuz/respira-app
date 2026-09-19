@@ -57,7 +57,7 @@ function defineTechnique(
 export const BREATHING_TECHNIQUES: Record<BreathingTechnique, BreathingTechniqueDef> = {
   BOX: defineTechnique(
     "BOX",
-    "Kutu nefesi",
+    "Kutu Nefesi",
     "4 sn nefes al – 4 sn tut – 4 sn ver – 4 sn tut, tekrarla",
     "Orta yoğunlukta stres, hızlı odaklanma gerektiğinde",
     [
@@ -69,7 +69,7 @@ export const BREATHING_TECHNIQUES: Record<BreathingTechnique, BreathingTechnique
   ),
   FOUR_SEVEN_EIGHT: defineTechnique(
     "FOUR_SEVEN_EIGHT",
-    "4-7-8 tekniği",
+    "4-7-8 Tekniği",
     "4 sn nefes al – 7 sn tut – 8 sn ver",
     "Yüksek stres, sakinleşmeye ihtiyaç olduğunda",
     [
@@ -80,7 +80,7 @@ export const BREATHING_TECHNIQUES: Record<BreathingTechnique, BreathingTechnique
   ),
   DIAPHRAGMATIC: defineTechnique(
     "DIAPHRAGMATIC",
-    "Diyaframatik (karın) nefesi",
+    "Diyaframatik (Karın) Nefesi",
     "Burundan yavaş nefes al, karnın şişsin, ağızdan yavaş ver",
     "Düşük-orta stres, genel gevşeme",
     [

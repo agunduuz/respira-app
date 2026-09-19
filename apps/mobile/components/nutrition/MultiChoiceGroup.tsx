@@ -16,27 +16,34 @@ export interface Choice<T extends string> {
 interface Props<T extends string> {
   label: string;
   choices: readonly Choice<T>[];
-  value: T | null;
-  onChange: (v: T) => void;
+  value: readonly T[];
+  onChange: (next: T[]) => void;
   optional?: boolean;
+  hint?: string;
 }
 
 /**
- * Çoktan seçmeli alan. Radio semantiği veriliyor ki ekran okuyucu seçili
- * öğeyi doğru duyursun; dokunma hedefi 48dp tabanında.
+ * ChoiceGroup'un çoklu seçim hâli — tek bir alanda birden fazla değer
+ * seçilebildiği yerler için (ör. birden fazla antrenman türü yapan biri).
+ * Görsel olarak ChoiceGroup ile aynı dil, ama radyo değil checkbox semantiği.
  */
-export function ChoiceGroup<T extends string>({
+export function MultiChoiceGroup<T extends string>({
   label,
   choices,
   value,
   onChange,
   optional,
+  hint,
 }: Props<T>) {
   const preference = useThemeStore((s) => s.preference);
   const palette = preference === "light" ? lightPalette : darkPalette;
 
+  function toggle(v: T) {
+    onChange(value.includes(v) ? value.filter((x) => x !== v) : [...value, v]);
+  }
+
   return (
-    <View className="gap-2" accessibilityRole="radiogroup" accessibilityLabel={label}>
+    <View className="gap-2" accessibilityLabel={label}>
       <View className="flex-row items-baseline gap-2">
         <Text variant="label" muted>
           {label.toLocaleUpperCase("tr-TR")}
@@ -49,15 +56,14 @@ export function ChoiceGroup<T extends string>({
       </View>
       <View className="flex-row flex-wrap gap-2">
         {choices.map((c) => {
-          const selected = c.value === value;
+          const selected = value.includes(c.value);
           return (
             <Pressable
               key={c.value}
-              accessibilityRole="radio"
-              accessibilityState={{ selected }}
-              aria-checked={selected}
+              accessibilityRole="checkbox"
+              accessibilityState={{ checked: selected }}
               accessibilityLabel={c.label}
-              onPress={() => onChange(c.value)}
+              onPress={() => toggle(c.value)}
               style={{ minHeight: touchTarget.min }}
               className={cn(
                 "flex-row items-center justify-center gap-1.5 rounded-md border px-4",
@@ -79,6 +85,11 @@ export function ChoiceGroup<T extends string>({
           );
         })}
       </View>
+      {hint ? (
+        <Text variant="bodySm" muted>
+          {hint}
+        </Text>
+      ) : null}
     </View>
   );
 }

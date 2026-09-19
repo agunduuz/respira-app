@@ -7,10 +7,11 @@ import {
 } from "@respira/shared-types";
 import { router } from "expo-router";
 import { useEffect, useState } from "react";
-import { ScrollView, View } from "react-native";
+import { KeyboardAvoidingView, Platform, ScrollView, View } from "react-native";
 
 import { ChoiceGroup } from "@/components/nutrition/ChoiceGroup";
 import { Field } from "@/components/nutrition/Field";
+import { TimePickerField } from "@/components/nutrition/TimePickerField";
 import { Button, Card, Checkbox, Screen, Text } from "@/components/ui";
 import { usePostureProfile, useSavePostureProfile } from "@/lib/posture-queries";
 
@@ -43,8 +44,11 @@ export default function PostureFormScreen() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    // Sunucudan gelen kayıtlı profili bir kerelik düzenlenebilir yerel forma
+    // kopyalıyoruz — react-query verisini forma senkronlamanın standart yolu.
     const p = data?.profile;
     if (!p) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setWorkStyle(p.workStyle);
     setIntensity(p.workIntensity);
     setHasScreen((p.screenHoursPerDay ?? 0) > 0);
@@ -86,7 +90,8 @@ export default function PostureFormScreen() {
 
   return (
     <Screen edges={["bottom"]}>
-      <ScrollView contentContainerClassName="gap-4 p-4 pb-8">
+      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} className="flex-1">
+      <ScrollView contentContainerClassName="gap-4 p-4 pb-8" keyboardShouldPersistTaps="handled">
         <Card className="gap-4">
           <Text variant="title">Çalışma şeklin</Text>
           <ChoiceGroup label="Çalışma şekli" choices={WORK_STYLES} value={workStyle} onChange={setWorkStyle} />
@@ -143,10 +148,10 @@ export default function PostureFormScreen() {
           {limitHours ? (
             <View className="flex-row gap-2">
               <View className="flex-1">
-                <Field label="Başlangıç" value={start} onChangeText={setStart} maxLength={5} placeholder="09:00" />
+                <TimePickerField label="Başlangıç" value={start} onChange={setStart} />
               </View>
               <View className="flex-1">
-                <Field label="Bitiş" value={end} onChangeText={setEnd} maxLength={5} placeholder="18:00" />
+                <TimePickerField label="Bitiş" value={end} onChange={setEnd} />
               </View>
             </View>
           ) : (
@@ -168,6 +173,7 @@ export default function PostureFormScreen() {
           Bu öneriler genel ergonomi bilgisidir, tıbbi tavsiye değildir.
         </Text>
       </ScrollView>
+      </KeyboardAvoidingView>
     </Screen>
   );
 }

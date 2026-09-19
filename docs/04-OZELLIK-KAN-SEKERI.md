@@ -1,28 +1,30 @@
 # 04 — Özellik: Kan Şekeri / Beslenme Takibi
 
-Bu, uygulamanın en kapsamlı modülü. 5 adımlı bir onboarding anketi + günlük öğün takibi + öneriler + raporlama içeriyor.
+Bu, uygulamanın en kapsamlı modülü. 4 adımlı bir onboarding anketi + günlük öğün takibi + öneriler + raporlama içeriyor.
 
-## 5 Adımlı Kullanıcı Tanıma Anketi
+## 4 Adımlı Kullanıcı Tanıma Anketi
 
-### Adım 1 — Öğün Sayısı
+### Adım 1 — Seni Tanıyalım (Öğün Düzeni + Fiziksel Profil)
+İki eski adım (Öğün Sayısı, Fiziksel Profil) tek adımda birleşti — anketi kısaltıp tek oturumda "seni tanıma" hissi vermek için.
+
+**Öğün düzeni:**
 - Kullanıcı günde kaç öğün tükettiğini seçer (ör. 3, 4, 5, 6 öğün).
 - Eğer 3'ten fazla öğün seçildiyse, öğün saatlerini opsiyonel olarak tanımlayabilir.
 - Öğün saati tanımlanmışsa ve bu saatler için bildirim istiyorsa **ayrı bir izin** istenir (`ConsentType.BILDIRIM_IZNI_OGUN`).
 
-### Adım 2 — Fiziksel Profil
-**Zorunlu alanlar:**
+**Fiziksel profil — zorunlu alanlar:**
 - Yaş, Boy (cm), Kilo (kg)
 - Haftalık antrenman sıklığı (Hiçbir zaman / 1-2 gün / 2-3 gün / 4-5 gün / Her gün)
 - Antrenman türü (Koşu, Yoga, Fitness, Crossfit, Calisthenics, Hybrid, Diğer)
 - Hedeflenen vücut tipi (Atletik / Kas kütlesi kazanımı / Kilo verme / Kiloda sabit kalma / Yağ yakımı)
 
-**Opsiyonel alanlar:**
+**Fiziksel profil — opsiyonel alanlar:**
 - Yağ oranı (%)
 - Vücut ölçüleri: boyun, kol, bel, kalça (cm)
 
-### Adım 3 — Makro Hedefleri (Bilimsel Referanslı Otomatik Hesaplama)
+### Adım 2 — Makro Hedefleri (Bilimsel Referanslı Otomatik Hesaplama)
 
-Kullanıcı karbonhidrat/protein/yağ/kalori değerlerini manuel girebilir, **ama varsayılan olarak Adım 1-2'deki verilerden otomatik hesaplanır.**
+Kullanıcı karbonhidrat/protein/yağ/kalori değerlerini manuel girebilir, **ama varsayılan olarak Adım 1'deki verilerden otomatik hesaplanır.**
 
 **Hesaplama yöntemi (referans: Mifflin-St Jeor denklemi + aktivite çarpanı — spor beslenmesi literatüründe en yaygın kabul gören BMR/TDEE hesaplama yöntemlerinden biri):**
 
@@ -52,7 +54,7 @@ Makro dağılımı:
 - Bu formüller ekranın altında kısa bir FYI ile açıklanmalı: *"Bu değerler Mifflin-St Jeor formülüne dayalı genel bir tahmindir. Kesin ihtiyacın için bir diyetisyene danışmanı öneririz."*
 - Kullanıcı önerilen değerleri değiştirdiğinde, değiştirdiği alanın yanında küçük bir "varsayılana dön" seçeneği olmalı.
 
-### Adım 4 — Sağlık Bilgileri (Opsiyonel) ve Kan Tahlili Hatırlatması
+### Adım 3 — Sağlık Bilgileri (Opsiyonel) ve Kan Tahlili Hatırlatması
 
 **Opsiyonel alanlar:**
 - Kan grubu
@@ -69,8 +71,8 @@ Makro dağılımı:
    Bu onay, `ConsentRecord` tablosuna `BILDIRIM_IZNI_KAN_TAHLILI` tipiyle kaydedilir.
 - **Türkiye hukuku notu:** Bu ibarenin yasal olarak yeterli olup olmadığı, App Store/Play Store'un sağlık uygulaması politikaları ve KVKK'nın özel nitelikli veri şartları göz önünde bulundurularak, yayın öncesi bir hukuk danışmanına onaylatılmalı. Buradaki metin bir taslaktır.
 
-### Adım 5 — Özet ve Başlangıç
-- Girilen tüm bilgiler (Adım 1-4) tek ekranda özetlenir.
+### Adım 4 — Özet ve Başlangıç
+- Girilen tüm bilgiler (Adım 1-3) tek ekranda özetlenir.
 - Kullanıcı "Düzenle" ile herhangi bir adıma geri dönebilir.
 - "Başla" ile profil kaydedilir ve günlük takip aktif hale gelir.
 
@@ -198,8 +200,8 @@ model DailyNutritionSummary {
 
 ## Kabul Kriterleri
 
-- [ ] 5 adımlı anket sırayla tamamlanabiliyor, her adımdan geri dönülebiliyor.
-- [ ] Adım 3'teki makro hesaplaması Adım 1-2 verileriyle doğru şekilde otomatik dolduruluyor ve kullanıcı değiştirebiliyor.
+- [ ] 4 adımlı anket sırayla tamamlanabiliyor, her adımdan geri dönülebiliyor.
+- [ ] Adım 2'deki makro hesaplaması Adım 1 verileriyle doğru şekilde otomatik dolduruluyor ve kullanıcı değiştirebiliyor.
 - [ ] Basit ve detaylı mod arasında geçiş net, kullanıcıya hangi modda takip yapılıp yapılmadığı açıkça gösteriliyor.
 - [ ] Öğle önerisi her zaman diyetisyen uyarısıyla birlikte gösteriliyor.
 - [ ] Ertesi gün referans mantığı sadece detaylı mod verisiyle çalışıyor, basit moddan yanlış sayısal çıkarım yapmıyor.

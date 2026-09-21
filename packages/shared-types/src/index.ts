@@ -1,3 +1,4 @@
+export * from "./activity";
 export * from "./blood-test";
 export * from "./consent";
 export * from "./daily-report";

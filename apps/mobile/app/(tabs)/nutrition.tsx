@@ -11,10 +11,8 @@ import {
   useToggleMealFavorite,
   type MealRow,
 } from "@/lib/nutrition-queries";
-import { useThemeStore } from "@/theme/theme-store";
-import { darkPalette, lightPalette, touchTarget } from "@/theme/tokens";
-
-const rgb = (c: string) => `rgb(${c.split(" ").join(", ")})`;
+import { touchTarget } from "@/theme/tokens";
+import { rgb, usePalette } from "@/theme/use-palette";
 const todayKey = () => new Date().toISOString().slice(0, 10);
 
 /** Bir sonraki öğünün etiketini kayıt sayısına göre tahmin eder. */
@@ -24,8 +22,7 @@ function nextMealLabel(count: number, mealsPerDay: number): string {
 }
 
 export default function NutritionScreen() {
-  const preference = useThemeStore((s) => s.preference);
-  const palette = preference === "light" ? lightPalette : darkPalette;
+  const palette = usePalette();
 
   const date = todayKey();
   const { data: profileData, isPending: profilePending } = useNutritionProfile();
@@ -69,7 +66,7 @@ export default function NutritionScreen() {
 
   return (
     <Screen edges={["top"]}>
-      <ScrollView contentContainerClassName="gap-6 p-4 pb-12">
+      <ScrollView contentContainerClassName="gap-6 p-5 pb-12">
         <View className="gap-1">
           <Text variant="label" muted>
             BUGÜN
@@ -150,12 +147,12 @@ export default function NutritionScreen() {
             accessibilityRole="button"
             accessibilityLabel="Raporlar"
             style={{ minHeight: touchTarget.min }}
-            className="flex-row items-center gap-3 rounded-lg border border-border bg-surface px-4"
+            className="flex-row items-center gap-3 rounded-lg border border-border bg-surface px-5"
           >
             {({ pressed }) => (
               <View className="flex-1 flex-row items-center gap-3" style={{ opacity: pressed ? 0.65 : 1 }}>
                 <View
-                  className="items-center justify-center rounded-full bg-elevated"
+                  className="items-center justify-center rounded-full bg-accent/10"
                   style={{ width: 36, height: 36 }}
                 >
                   <BarChart3 size={18} strokeWidth={1.75} color={rgb(palette.accent)} />
@@ -182,8 +179,7 @@ export default function NutritionScreen() {
 
 function MealItem({ meal }: { meal: MealRow }) {
   const toggle = useToggleMealFavorite();
-  const preference = useThemeStore((st) => st.preference);
-  const palette = preference === "light" ? lightPalette : darkPalette;
+  const palette = usePalette();
 
   return (
     <View className="flex-row items-center gap-3 border-b border-border pb-3">

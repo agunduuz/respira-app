@@ -13,13 +13,9 @@ import { ActivityIndicator, ScrollView, View } from "react-native";
 
 import { FeatureIntro } from "@/components/FeatureIntro";
 import { ChoiceGroup } from "@/components/nutrition/ChoiceGroup";
+import { PermissionHint } from "@/components/PermissionHint";
 import { Button, Card, Screen, Text } from "@/components/ui";
-import {
-  DEFAULT_QUIET_HOURS,
-  cancelCategory,
-  ensurePermission,
-  scheduleRepeatingReminder,
-} from "@/lib/notifications";
+import { useReminders } from "@/lib/use-reminders";
 import { useSaveStressProfile, useStressProfile, useTodaySessions } from "@/lib/stress-queries";
 import { useStressIntroStore } from "@/lib/stress-intro-store";
 
@@ -49,7 +45,8 @@ export default function StressScreen() {
   const [frequency, setFrequency] = useState<string | null>(
     profile ? String(profile.desiredSessionsPerDay) : null
   );
-  const [notifyState, setNotifyState] = useState<"idle" | "on" | "denied">("idle");
+  const reminders = useReminders();
+  const reminderOn = reminders.isActive("stress");
 
   const recommended = level ? recommendTechnique(Number(level)) : null;
 
@@ -65,23 +62,6 @@ export default function StressScreen() {
     await saveProfile.mutateAsync({ desiredSessionsPerDay: Number(value) });
   }
 
-  async function enableReminders() {
-    const granted = await ensurePermission();
-    if (!granted) {
-      setNotifyState("denied");
-      return;
-    }
-    const perDay = frequency ? Number(frequency) : 4;
-    const intervalSeconds = Math.round(86400 / perDay);
-    await scheduleRepeatingReminder({
-      category: "stress",
-      title: "Kısa bir mola",
-      body: "Birkaç dakikalık bir nefes egzersizi iyi gelebilir.",
-      intervalSeconds,
-      quietHours: DEFAULT_QUIET_HOURS,
-    });
-    setNotifyState("on");
-  }
 
   const today = sessions?.today;
 
@@ -112,8 +92,8 @@ export default function StressScreen() {
   }
 
   return (
-    <Screen edges={["top"]}>
-      <ScrollView contentContainerClassName="gap-6 p-4 pb-12">
+    <Screen edges={["bottom"]}>
+      <ScrollView contentContainerClassName="gap-6 p-5 pb-12">
         <View className="gap-1">
           <Text variant="label" muted>
             STRES
@@ -143,7 +123,7 @@ export default function StressScreen() {
             onChange={setLevel}
           />
           {recommended ? (
-            <View className="gap-2 rounded-md border border-border-strong bg-elevated p-3">
+            <View className="gap-2 rounded-md bg-accent/10 p-3">
               <Text variant="label" muted>
                 ÖNERİLEN TEKNİK
               </Text>
@@ -198,25 +178,18 @@ export default function StressScreen() {
             onChange={saveFrequency}
           />
           <Button
-            title={notifyState === "on" ? "Hatırlatmalar açık" : "Hatırlatmaları aç"}
-            variant={notifyState === "on" ? "secondary" : "primary"}
-            onPress={enableReminders}
+            title={reminderOn ? "Hatırlatmalar açık" : "Hatırlatmaları aç"}
+            variant={reminderOn ? "secondary" : "primary"}
+            onPress={() => void reminders.enable("stress")}
           />
-          {notifyState === "on" ? (
+          {reminderOn ? (
             <Button
               title="Hatırlatmaları kapat"
               variant="ghost"
-              onPress={async () => {
-                await cancelCategory("stress");
-                setNotifyState("idle");
-              }}
+              onPress={() => void reminders.disable("stress")}
             />
           ) : null}
-          {notifyState === "denied" ? (
-            <Text variant="bodySm" className="text-warm">
-              Bildirim izni verilmedi. Egzersizleri elle başlatabilirsin.
-            </Text>
-          ) : null}
+          {reminders.permission === "denied" ? <PermissionHint fallback="Egzersizleri elle başlatabilirsin." /> : null}
         </Card>
 
         <Text variant="bodySm" muted className="text-center">

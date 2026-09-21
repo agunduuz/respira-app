@@ -8,6 +8,8 @@ export type TextVariant =
   | "title"
   | "body"
   | "bodySm"
+  | "subhead"
+  | "button"
   | "label"
   | "data";
 
@@ -21,6 +23,8 @@ const variantClass: Record<TextVariant, string> = {
   title: "font-display text-title",
   body: "font-body text-body",
   bodySm: "font-body text-body-sm",
+  subhead: "font-bodyMedium text-subhead",
+  button: "font-bodySemiBold text-button",
   label: "font-bodyMedium text-label",
   data: "font-data text-data",
 };

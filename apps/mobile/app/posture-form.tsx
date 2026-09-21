@@ -6,13 +6,14 @@ import {
   type WorkStyle,
 } from "@respira/shared-types";
 import { router } from "expo-router";
-import { useEffect, useState } from "react";
-import { KeyboardAvoidingView, Platform, ScrollView, View } from "react-native";
+import { useCallback, useEffect, useState } from "react";
+import { View } from "react-native";
 
+import { StepFlow } from "@/components/flow/StepFlow";
 import { ChoiceGroup } from "@/components/nutrition/ChoiceGroup";
 import { Field } from "@/components/nutrition/Field";
 import { TimePickerField } from "@/components/nutrition/TimePickerField";
-import { Button, Card, Checkbox, Screen, Text } from "@/components/ui";
+import { Card, Checkbox, Text } from "@/components/ui";
 import { usePostureProfile, useSavePostureProfile } from "@/lib/posture-queries";
 
 const WORK_STYLES: readonly { value: WorkStyle; label: string }[] = [
@@ -27,10 +28,26 @@ const INTENSITIES: readonly { value: WorkIntensity; label: string }[] = [
   { value: "HEAVY", label: "Ağır fiziksel" },
 ];
 
-/** docs/05 onboarding formu. */
+const STEP_TITLES = ["Nasıl çalışıyorsun?", "Molana ne kadar ayırabilirsin?", "Hatırlatmalar ne zaman gelsin?"];
+
+/** Şema hatasının hangi adımda düzeltileceği. */
+const FIELD_STEP: Record<string, number> = {
+  workStyle: 1,
+  workIntensity: 1,
+  occupationType: 1,
+  screenHoursPerDay: 2,
+  minutesPerHourAvailable: 2,
+  workHoursStart: 3,
+  workHoursEnd: 3,
+};
+
+/** docs/05 onboarding formu — 3 kısa adım. */
 export default function PostureFormScreen() {
   const { data } = usePostureProfile();
   const save = useSavePostureProfile();
+
+  const [step, setStep] = useState(1);
+  const goBack = useCallback(() => setStep((s) => Math.max(1, s - 1)), []);
 
   const [workStyle, setWorkStyle] = useState<WorkStyle | null>(null);
   const [intensity, setIntensity] = useState<WorkIntensity | null>(null);
@@ -73,7 +90,9 @@ export default function PostureFormScreen() {
     });
 
     if (!parsed.success) {
-      setError(parsed.error.issues[0]?.message ?? "Formda eksik veya hatalı alan var.");
+      const issue = parsed.error.issues[0];
+      setError(issue?.message ?? "Formda eksik veya hatalı alan var.");
+      setStep(FIELD_STEP[String(issue?.path[0] ?? "")] ?? 1);
       return;
     }
 
@@ -88,58 +107,78 @@ export default function PostureFormScreen() {
     }
   }
 
+  const total = STEP_TITLES.length;
+
   return (
-    <Screen edges={["bottom"]}>
-      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} className="flex-1">
-      <ScrollView contentContainerClassName="gap-4 p-4 pb-8" keyboardShouldPersistTaps="handled">
+    <StepFlow
+      step={step}
+      total={total}
+      title={STEP_TITLES[step - 1]}
+      onBack={goBack}
+      onNext={step < total ? () => setStep(step + 1) : submit}
+      nextDisabled={step === 1 && (!workStyle || !intensity)}
+      loading={save.isPending}
+      error={error}
+      note={
+        step === total ? (
+          <Text variant="bodySm" muted>
+            Bu öneriler genel ergonomi bilgisidir, tıbbi tavsiye değildir.
+          </Text>
+        ) : null
+      }
+    >
+      {step === 1 ? (
         <Card className="gap-4">
-          <Text variant="title">Çalışma şeklin</Text>
           <ChoiceGroup label="Çalışma şekli" choices={WORK_STYLES} value={workStyle} onChange={setWorkStyle} />
           <ChoiceGroup label="İş yoğunluğu" choices={INTENSITIES} value={intensity} onChange={setIntensity} />
           <ChoiceGroup
             label="Meslek tipi"
+            optional
             choices={OCCUPATION_TYPES.map((o) => ({ value: o, label: o }))}
             value={occupation}
             onChange={setOccupation}
           />
         </Card>
+      ) : null}
 
-        <Card className="gap-3">
-          <Text variant="title">Ekran başında çalışma</Text>
-          <Checkbox
-            checked={hasScreen}
-            onChange={setHasScreen}
-            label="Ekran başında zorunlu çalışmam var"
-          />
-          {hasScreen ? (
-            <Field
-              label="Günde kaç saat"
-              value={screenHours}
-              onChangeText={setScreenHours}
-              keyboardType="number-pad"
-              maxLength={2}
+      {step === 2 ? (
+        <>
+          <Card className="gap-3">
+            <ChoiceGroup
+              label="Saat başı ayırabileceğin süre"
+              choices={POSTURE_MINUTE_PRESETS.map((m) => ({
+                value: String(m),
+                label: m === 2 ? "1-2 dk" : m === 5 ? "3-5 dk" : "5+ dk",
+              }))}
+              value={String(minutes)}
+              onChange={(v) => setMinutes(Number(v))}
             />
-          ) : null}
-        </Card>
+            <Text variant="bodySm" muted>
+              Egzersiz seti bu süreye göre seçilir; verdiğin süreyi aşmaz.
+            </Text>
+          </Card>
 
-        <Card className="gap-3">
-          <Text variant="title">Saat başı kendine ne kadar ayırabilirsin?</Text>
-          <ChoiceGroup
-            label="Süre"
-            choices={POSTURE_MINUTE_PRESETS.map((m) => ({
-              value: String(m),
-              label: m === 2 ? "1-2 dk" : m === 5 ? "3-5 dk" : "5+ dk",
-            }))}
-            value={String(minutes)}
-            onChange={(v) => setMinutes(Number(v))}
-          />
-          <Text variant="bodySm" muted>
-            Egzersiz seti bu süreye göre seçilir; verdiğin süreyi aşmaz.
-          </Text>
-        </Card>
+          <Card className="gap-3">
+            <Checkbox
+              checked={hasScreen}
+              onChange={setHasScreen}
+              label="Ekran başında zorunlu çalışmam var"
+            />
+            {hasScreen ? (
+              <Field
+                label="Günde kaç saat"
+                value={screenHours}
+                onChangeText={setScreenHours}
+                keyboardType="number-pad"
+                maxLength={2}
+              />
+            ) : null}
+          </Card>
+        </>
+      ) : null}
 
+      {step === 3 ? (
         <Card className="gap-3">
-          <Text variant="title">Mesai saatleri</Text>
           <Checkbox
             checked={limitHours}
             onChange={setLimitHours}
@@ -160,20 +199,7 @@ export default function PostureFormScreen() {
             </Text>
           )}
         </Card>
-
-        {error ? (
-          <Text variant="bodySm" className="text-danger">
-            {error}
-          </Text>
-        ) : null}
-
-        <Button title="Kaydet" onPress={submit} loading={save.isPending} />
-
-        <Text variant="bodySm" muted>
-          Bu öneriler genel ergonomi bilgisidir, tıbbi tavsiye değildir.
-        </Text>
-      </ScrollView>
-      </KeyboardAvoidingView>
-    </Screen>
+      ) : null}
+    </StepFlow>
   );
 }

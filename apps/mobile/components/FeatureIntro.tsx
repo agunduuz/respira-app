@@ -3,10 +3,7 @@ import { ScrollView, View } from "react-native";
 
 import { Button, Card, Screen, Text } from "@/components/ui";
 import { cn } from "@/theme/cn";
-import { useThemeStore } from "@/theme/theme-store";
-import { darkPalette, lightPalette } from "@/theme/tokens";
-
-const rgb = (c: string) => `rgb(${c.split(" ").join(", ")})`;
+import { rgb, usePalette } from "@/theme/use-palette";
 
 export interface FeatureIntroBenefit {
   icon: LucideIcon;
@@ -32,8 +29,7 @@ interface Props {
  * kalitede kalsın ve tek yerden bakımı yapılabilsin.
  */
 export function FeatureIntro({ icon: Icon, title, subtitle, benefits, ctaLabel, ctaIcon, onPress, caption }: Props) {
-  const preference = useThemeStore((s) => s.preference);
-  const palette = preference === "light" ? lightPalette : darkPalette;
+  const palette = usePalette();
 
   return (
     <Screen edges={["top"]}>
@@ -45,7 +41,7 @@ export function FeatureIntro({ icon: Icon, title, subtitle, benefits, ctaLabel, 
               style={{ position: "absolute", width: 72, height: 72, borderRadius: 36, opacity: 0.12 }}
             />
             <View
-              className="items-center justify-center rounded-full bg-elevated"
+              className="items-center justify-center rounded-full bg-accent/10"
               style={{ width: 52, height: 52 }}
             >
               <Icon size={24} strokeWidth={1.75} color={rgb(palette.accent)} />
@@ -65,10 +61,10 @@ export function FeatureIntro({ icon: Icon, title, subtitle, benefits, ctaLabel, 
           {benefits.map(({ icon: BenefitIcon, title: benefitTitle, body }, i) => (
             <View
               key={benefitTitle}
-              className={cn("flex-row items-center gap-4 px-4 py-3.5", i > 0 && "border-t border-border")}
+              className={cn("flex-row items-center gap-4 px-5 py-3.5", i > 0 && "border-t border-border")}
             >
               <View
-                className="items-center justify-center rounded-full bg-elevated"
+                className="items-center justify-center rounded-full bg-accent/10"
                 style={{ width: 36, height: 36 }}
               >
                 <BenefitIcon size={18} strokeWidth={1.75} color={rgb(palette.accent)} />

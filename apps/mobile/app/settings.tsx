@@ -1,16 +1,62 @@
 import { DELETE_ACCOUNT_CONFIRMATION } from "@respira/shared-types";
-import { Link } from "expo-router";
+import Constants from "expo-constants";
 import { File, Paths } from "expo-file-system";
+import { router } from "expo-router";
 import * as Sharing from "expo-sharing";
+import {
+  Bell,
+  BookOpen,
+  Database,
+  Droplet,
+  Eye,
+  FileText,
+  HeartPulse,
+  LogOut,
+  PersonStanding,
+  ShieldOff,
+  Target,
+  Timer,
+  Wind,
+} from "lucide-react-native";
 import { useState } from "react";
-import { ScrollView, TextInput, View } from "react-native";
+import { Alert, ScrollView, TextInput, View } from "react-native";
 
-import { Button, Card, Screen, Text } from "@/components/ui";
+import { PermissionHint } from "@/components/PermissionHint";
+import { SettingsGroup } from "@/components/settings/SettingsGroup";
+import { SettingsRow } from "@/components/settings/SettingsRow";
+import { Button, Card, Screen, Segmented, Text } from "@/components/ui";
 import { signOut, useAuthStore } from "@/lib/auth-store";
+import { DAILY_MODULES, useDailyModulesStore, type DailyModule } from "@/lib/daily-modules-store";
+import { useEyeStrainSettings } from "@/lib/eye-strain-queries";
 import { useDeleteAccount, useExportData, useRevokeConsent } from "@/lib/queries";
+import { usePostureProfile } from "@/lib/posture-queries";
+import { useStressProfile } from "@/lib/stress-queries";
+import { useReminders, type ReminderCategory } from "@/lib/use-reminders";
+import { useWaterGoal } from "@/lib/water-queries";
+import { useWelcomeStore } from "@/lib/welcome-store";
+import { useThemeStore, type ThemePreference } from "@/theme/theme-store";
 import { touchTarget } from "@/theme/tokens";
 
-/** docs/02 → KVKK md. 11 hakları ve cihaz kaybı senaryosu. */
+const THEME_OPTIONS: readonly { value: ThemePreference; label: string }[] = [
+  { value: "light", label: "Açık" },
+  { value: "dark", label: "Koyu" },
+  { value: "system", label: "Sistem" },
+];
+
+const DAILY_MODULE_LABEL: Record<DailyModule, string> = {
+  eye: "Göz molası",
+  water: "Su hedefi",
+  posture: "Duruş molası",
+  stress: "Nefes egzersizi",
+};
+
+const formatLiters = (ml: number) => `${(ml / 1000).toFixed(1).replace(".", ",")} L`;
+
+/**
+ * Ayarlar: kullanıcının uygulamayı kendi alışkanlıklarına göre şekillendirdiği
+ * yer. Profil'den bilinçli olarak ayrı — veri indirme, rıza ve hesap silme gibi
+ * teknik/hesap işlemleri burada (docs/02 → KVKK md. 11).
+ */
 export default function SettingsScreen() {
   const email = useAuthStore((s) => s.session?.user.email);
   const exportData = useExportData();
@@ -18,6 +64,21 @@ export default function SettingsScreen() {
   const revoke = useRevokeConsent();
   const [confirmation, setConfirmation] = useState("");
   const [status, setStatus] = useState<string | null>(null);
+
+  const themePreference = useThemeStore((s) => s.preference);
+  const setThemePreference = useThemeStore((s) => s.setPreference);
+  const dailyEnabled = useDailyModulesStore((s) => s.enabled);
+  const setDailyModule = useDailyModulesStore((s) => s.set);
+
+  const reminders = useReminders();
+  const { data: eyeSettings } = useEyeStrainSettings();
+  const { data: waterData } = useWaterGoal();
+  const { data: postureData } = usePostureProfile();
+  const { data: stressData } = useStressProfile();
+
+  const goal = waterData?.goal ?? null;
+  const hasPosture = !!postureData?.profile;
+  const stressPerDay = stressData?.profile?.desiredSessionsPerDay ?? null;
 
   async function handleExport() {
     setStatus(null);
@@ -39,74 +100,167 @@ export default function SettingsScreen() {
     }
   }
 
+  /** Anahtar açılırken kurulum eksikse (ör. su hedefi yok) ilgili kuruluma götürür. */
+  async function toggleReminder(category: ReminderCategory, setupHref?: "/water-goal" | "/posture-form") {
+    const result = await reminders.toggle(category);
+    if (result === "setup" && setupHref) router.push(setupHref);
+  }
+
+  function confirmRevoke() {
+    Alert.alert(
+      "Açık rızayı geri al",
+      "Geri alırsan ilgili özellikleri kullanamazsın, hesabın açık kalır. Devam edilsin mi?",
+      [
+        { text: "Vazgeç", style: "cancel" },
+        {
+          text: "Geri al",
+          style: "destructive",
+          onPress: () => revoke.mutate("OZEL_NITELIKLI_VERI_RIZASI"),
+        },
+      ]
+    );
+  }
+
   return (
-    <Screen edges={["top"]}>
-      <ScrollView contentContainerClassName="gap-6 p-4 pb-12">
-        <Text variant="displayLg">Ayarlar</Text>
+    <Screen edges={["bottom"]}>
+      <ScrollView contentContainerClassName="gap-6 p-5 pb-12">
+        <SettingsGroup title="Görünüm">
+          <View className="gap-3 px-5 py-4">
+            <Text variant="body">Tema</Text>
+            <Segmented options={THEME_OPTIONS} value={themePreference} onChange={setThemePreference} />
+          </View>
+        </SettingsGroup>
 
-        <Card className="gap-1">
-          <Text variant="label" muted>
-            HESAP
-          </Text>
-          <Text variant="body">{email ?? "—"}</Text>
-        </Card>
-
-        <Card className="gap-3">
-          <Text variant="title">Verilerim</Text>
-          <Text variant="bodySm" muted>
-            Tüm verilerini JSON olarak indirebilirsin (KVKK md. 11).
-          </Text>
-          <Button
-            title="Verilerimi indir"
-            variant="secondary"
-            onPress={handleExport}
-            loading={exportData.isPending}
+        <SettingsGroup
+          title="Hatırlatmalar"
+          footer={
+            reminders.permission === "denied" ? (
+              <PermissionHint fallback="Hatırlatmaları açmak için cihaz ayarlarından izin ver." />
+            ) : (
+              "Her modülün kendi ekranında da aynı hatırlatmayı açıp kapatabilirsin."
+            )
+          }
+        >
+          <SettingsRow
+            feature="goz"
+            icon={Eye}
+            label="Göz molası"
+            toggle={{
+              value: reminders.isActive("eye_strain"),
+              onChange: () => void toggleReminder("eye_strain"),
+            }}
           />
-          {status ? (
-            <Text variant="bodySm" muted>
-              {status}
-            </Text>
-          ) : null}
-          {exportData.isError ? (
-            <Text variant="bodySm" className="text-danger">
-              Dışa aktarma başarısız oldu.
-            </Text>
-          ) : null}
-        </Card>
-
-        <Card className="gap-3">
-          <Text variant="title">Rıza</Text>
-          <Text variant="bodySm" muted>
-            Sağlık verilerinin işlenmesine verdiğin açık rızayı geri alabilirsin.
-            Geri alırsan ilgili özellikleri kullanamazsın, hesabın açık kalır.
-          </Text>
-          <Button
-            title="Açık rızamı geri al"
-            variant="secondary"
-            onPress={() => revoke.mutate("OZEL_NITELIKLI_VERI_RIZASI")}
-            loading={revoke.isPending}
+          <SettingsRow
+            feature="su"
+            icon={Droplet}
+            label="Su"
+            toggle={{
+              value: reminders.isActive("water"),
+              onChange: () => void toggleReminder("water", "/water-goal"),
+            }}
           />
-        </Card>
-
-        <Card className="gap-3">
-          <Text variant="title">Kan tahlili</Text>
-          <Text variant="bodySm" muted>
-            Bir sonraki tahlil için takvim hatırlatması kurabilirsin.
-          </Text>
-          <Link href="/blood-test-reminder" asChild>
-            <Button title="Hatırlatmayı yönet" variant="secondary" />
-          </Link>
-        </Card>
-
-        <Card className="gap-3">
-          <Text variant="title">Oturum</Text>
-          <Button title="Çıkış yap" variant="secondary" onPress={() => signOut("local")} />
-          <Button
-            title="Tüm cihazlardan çıkış yap"
-            variant="secondary"
-            onPress={() => signOut("global")}
+          <SettingsRow
+            feature="durus"
+            icon={PersonStanding}
+            label="Duruş"
+            toggle={{
+              value: reminders.isActive("posture"),
+              onChange: () => void toggleReminder("posture", "/posture-form"),
+            }}
           />
-        </Card>
+          <SettingsRow
+            feature="nefes"
+            icon={Wind}
+            label="Nefes"
+            toggle={{
+              value: reminders.isActive("stress"),
+              onChange: () => void toggleReminder("stress"),
+            }}
+          />
+        </SettingsGroup>
+
+        <SettingsGroup title="Alışkanlıklar">
+          <SettingsRow
+            feature="goz"
+            icon={Timer}
+            label="Göz molası süreleri"
+            value={eyeSettings ? `${eyeSettings.intervalMinutes} dk · ${eyeSettings.breakSeconds} sn` : undefined}
+            onPress={() => router.push("/eye-strain-settings")}
+          />
+          <SettingsRow
+            feature="su"
+            icon={Target}
+            label="Günlük su hedefi"
+            value={goal ? formatLiters(goal.dailyTargetMl) : "Belirlenmedi"}
+            onPress={() => router.push("/water-goal")}
+          />
+          <SettingsRow
+            feature="durus"
+            icon={PersonStanding}
+            label="Duruş profili"
+            value={hasPosture ? "Düzenle" : "Kurulmadı"}
+            onPress={() => router.push("/posture-form")}
+          />
+          <SettingsRow
+            feature="nefes"
+            icon={HeartPulse}
+            label="Nefes sıklığı"
+            value={stressPerDay ? `Günde ${stressPerDay}` : "Ayarlanmadı"}
+            onPress={() => router.push("/stress")}
+          />
+        </SettingsGroup>
+
+        <SettingsGroup
+          title="Günün önerileri"
+          footer="Anasayfadaki listede görmek istediğin modülleri seç."
+        >
+          {DAILY_MODULES.map((module) => (
+            <SettingsRow
+              key={module}
+              label={DAILY_MODULE_LABEL[module]}
+              toggle={{ value: dailyEnabled[module], onChange: (on) => setDailyModule(module, on) }}
+            />
+          ))}
+        </SettingsGroup>
+
+        <SettingsGroup title="Yardım ve bilgi" footer="Bu uygulama bir sağlık hizmeti sağlamaz, yalnızca bir hatırlatma aracıdır.">
+          <SettingsRow
+            icon={BookOpen}
+            label="Karşılama akışını yeniden gör"
+            onPress={() => router.push("/(welcome)")}
+          />
+          <SettingsRow icon={FileText} label="Sürüm" value={Constants.expoConfig?.version ?? "—"} />
+        </SettingsGroup>
+
+        <SettingsGroup
+          title="Gizlilik ve veri"
+          footer={
+            exportData.isError ? (
+              <Text variant="bodySm" className="px-1 text-danger">
+                Dışa aktarma başarısız oldu.
+              </Text>
+            ) : (
+              (status ?? "Tüm verilerini JSON olarak indirebilirsin (KVKK md. 11).")
+            )
+          }
+        >
+          <SettingsRow icon={Database} label="Verilerimi indir" onPress={() => void handleExport()} />
+          <SettingsRow icon={ShieldOff} label="Açık rızamı geri al" onPress={confirmRevoke} />
+          <SettingsRow
+            icon={Bell}
+            label="Kan tahlili hatırlatması"
+            onPress={() => router.push("/blood-test-reminder")}
+          />
+        </SettingsGroup>
+
+        <SettingsGroup title="Hesap" footer={email ?? undefined}>
+          <SettingsRow icon={LogOut} label="Çıkış yap" onPress={() => void signOut("local")} />
+          <SettingsRow
+            icon={LogOut}
+            label="Tüm cihazlardan çıkış yap"
+            onPress={() => void signOut("global")}
+          />
+        </SettingsGroup>
 
         {/* Geri dönüşü olmayan işlem — ayrı kart, yazarak onay. */}
         <Card className="gap-3 border-danger">
@@ -129,7 +283,7 @@ export default function SettingsScreen() {
             accessibilityLabel="Silme onayı"
             placeholder={DELETE_ACCOUNT_CONFIRMATION}
             style={{ minHeight: touchTarget.min }}
-            className="rounded-md border border-border-strong bg-surface px-4 font-data text-data text-text"
+            className="rounded-md border border-border-strong bg-surface px-4 font-body text-body text-text"
           />
           <Button
             title="Hesabımı kalıcı olarak sil"
@@ -147,6 +301,17 @@ export default function SettingsScreen() {
             </Text>
           ) : null}
         </Card>
+
+        {__DEV__ ? (
+          <Button
+            title="Karşılama akışını sıfırla (geliştirici)"
+            variant="ghost"
+            onPress={async () => {
+              await useWelcomeStore.getState().reset();
+              await signOut("local");
+            }}
+          />
+        ) : null}
       </ScrollView>
     </Screen>
   );

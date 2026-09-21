@@ -12,7 +12,7 @@ export function Card({ elevated = false, className, ...rest }: CardProps) {
   return (
     <View
       className={cn(
-        "rounded-lg border border-border p-4",
+        "rounded-lg border border-border p-5",
         elevated ? "bg-elevated" : "bg-surface",
         className
       )}

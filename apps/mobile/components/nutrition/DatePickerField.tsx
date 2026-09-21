@@ -2,12 +2,11 @@ import { Calendar, ChevronLeft, ChevronRight, X } from "lucide-react-native";
 import { useState } from "react";
 import { Modal, Pressable, View } from "react-native";
 
+import { FieldLabel } from "@/components/nutrition/FieldLabel";
 import { Button, Text } from "@/components/ui";
 import { cn } from "@/theme/cn";
-import { useThemeStore } from "@/theme/theme-store";
-import { darkPalette, lightPalette, touchTarget } from "@/theme/tokens";
-
-const rgb = (c: string) => `rgb(${c.split(" ").join(", ")})`;
+import { touchTarget } from "@/theme/tokens";
+import { rgb, usePalette } from "@/theme/use-palette";
 
 const WEEKDAYS = ["Pt", "Sa", "Ça", "Pe", "Cu", "Ct", "Pz"];
 const MONTHS = [
@@ -37,8 +36,7 @@ interface Props {
  * yalnızca geçerli, gelecekte olmayan bir takvim günü seçtiren bir alt sayfa.
  */
 export function DatePickerField({ label, value, onChange, optional, hint, error }: Props) {
-  const preference = useThemeStore((s) => s.preference);
-  const palette = preference === "light" ? lightPalette : darkPalette;
+  const palette = usePalette();
   const [open, setOpen] = useState(false);
 
   const today = new Date();
@@ -72,16 +70,7 @@ export function DatePickerField({ label, value, onChange, optional, hint, error 
 
   return (
     <View className="gap-2">
-      <View className="flex-row items-baseline gap-2">
-        <Text variant="label" muted>
-          {label.toLocaleUpperCase("tr-TR")}
-        </Text>
-        {optional ? (
-          <Text variant="label" muted>
-            opsiyonel
-          </Text>
-        ) : null}
-      </View>
+      <FieldLabel label={label} optional={optional} />
 
       <Pressable
         onPress={openPicker}
@@ -93,7 +82,7 @@ export function DatePickerField({ label, value, onChange, optional, hint, error 
           error ? "border-danger" : "border-border-strong"
         )}
       >
-        <Text variant="data" className={displayValue ? "text-text" : "text-text-muted"}>
+        <Text variant="body" className={displayValue ? "text-text" : "text-text-muted"}>
           {displayValue ?? "Tarih seç"}
         </Text>
         <Calendar size={18} strokeWidth={1.75} color={rgb(palette.textMuted)} />
@@ -118,7 +107,7 @@ export function DatePickerField({ label, value, onChange, optional, hint, error 
           onPress={() => setOpen(false)}
         />
         <View
-          className="gap-4 rounded-t-xl border-t border-border bg-surface p-4"
+          className="gap-4 rounded-t-xl border-t border-border bg-surface p-5"
           style={{ position: "absolute", left: 0, right: 0, bottom: 0 }}
         >
           <View className="flex-row items-center justify-between">

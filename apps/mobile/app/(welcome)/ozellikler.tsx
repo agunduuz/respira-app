@@ -1,74 +1,72 @@
 import { router } from "expo-router";
-import { Droplet, Eye, PersonStanding, UtensilsCrossed, Wind } from "lucide-react-native";
-import { Pressable, View } from "react-native";
+import { Droplet, Eye, PersonStanding, type LucideIcon } from "lucide-react-native";
+import { View } from "react-native";
 
-import { StepDots } from "@/components/StepDots";
 import { Button, Card, Screen, Text } from "@/components/ui";
-import { useWelcomeStore } from "@/lib/welcome-store";
-import { useThemeStore } from "@/theme/theme-store";
-import { darkPalette, lightPalette } from "@/theme/tokens";
+import { cn } from "@/theme/cn";
+import { rgb, usePalette } from "@/theme/use-palette";
 
-const FEATURES = [
-  { Icon: Eye, title: "Göz molası", body: "20-20-20 kuralıyla ekran yorgunluğunu azalt." },
-  { Icon: UtensilsCrossed, title: "Beslenme", body: "Öğünlerini kaydet, makrolarını takip et." },
-  { Icon: Droplet, title: "Su", body: "Günlük su hedefini kolayca tut." },
-  { Icon: PersonStanding, title: "Duruş", body: "Düzenli aralıklarla duruşunu hatırlat." },
-  { Icon: Wind, title: "Nefes & Stres", body: "Kısa nefes egzersizleriyle sakinleş." },
-] as const;
+const BEFORE_AFTER: readonly { Icon: LucideIcon; before: string; after: string }[] = [
+  { Icon: Eye, before: "Ekrana bakarken molayı unutuyorum", after: "Göz molası zamanı gelince hatırlatılıyorum" },
+  { Icon: Droplet, before: "Gün bitince su içmediğimi fark ediyorum", after: "Su hedefimi gün içinde takip ediyorum" },
+  { Icon: PersonStanding, before: "Omuzlarım ve belim tutuluyor", after: "Kısa duruş molalarıyla hareket ediyorum" },
+];
 
-/** docs/01 → karşılama akışı 2/3: beş modülün tek satırlık özeti. */
-export default function WelcomeFeaturesScreen() {
-  const preference = useThemeStore((s) => s.preference);
-  const palette = preference === "light" ? lightPalette : darkPalette;
-  const rgb = (c: string) => `rgb(${c.split(" ").join(", ")})`;
-
-  async function skip() {
-    await useWelcomeStore.getState().markSeen();
-    router.replace("/sign-in");
-  }
+/** docs/01 → karşılama akışı 2/3: önce / sonra kartı. Özellik listesi her sekmenin kendi tanıtımında. */
+export default function WelcomeBeforeAfterScreen() {
+  const palette = usePalette();
 
   return (
-    <Screen>
-      <View className="flex-row justify-end p-4">
-        <Pressable onPress={skip} accessibilityRole="button" hitSlop={8} className="px-2 py-1">
-          <Text variant="label" muted>
-            Atla
-          </Text>
-        </Pressable>
-      </View>
-
+    <Screen transparent edges={["bottom"]}>
       <View className="flex-1 gap-6 px-6">
-        <Text variant="displayLg">Beş alışkanlık, tek yer.</Text>
+        <Text variant="displayLg">Günün daha sakin geçsin.</Text>
 
-        <Card className="gap-1">
-          {FEATURES.map(({ Icon, title, body }, i) => (
-            <View
-              key={title}
-              className={
-                "flex-row items-center gap-4 py-3" + (i > 0 ? " border-t border-border" : "")
-              }
-            >
-              <View
-                className="items-center justify-center rounded-full bg-elevated"
-                style={{ width: 40, height: 40 }}
-              >
-                <Icon size={20} strokeWidth={1.75} color={rgb(palette.accent)} />
-              </View>
-              <View className="flex-1 gap-0.5">
-                <Text variant="label">{title}</Text>
-                <Text variant="bodySm" muted>
-                  {body}
-                </Text>
-              </View>
-            </View>
-          ))}
-        </Card>
+        <View className="gap-3">
+          <Column
+            title="Önce"
+            items={BEFORE_AFTER.map(({ Icon, before }) => ({ Icon, text: before }))}
+            iconColor={rgb(palette.textMuted)}
+          />
+          <Column
+            title="Sonra"
+            accent
+            items={BEFORE_AFTER.map(({ Icon, after }) => ({ Icon, text: after }))}
+            iconColor={rgb(palette.accent)}
+          />
+        </View>
       </View>
 
       <View className="gap-4 p-6">
-        <StepDots total={3} current={2} color={rgb(palette.accent)} trackColor={rgb(palette.border)} />
         <Button title="İleri" onPress={() => router.replace("/(welcome)/basla")} />
       </View>
     </Screen>
+  );
+}
+
+function Column({
+  title,
+  items,
+  iconColor,
+  accent,
+}: {
+  title: string;
+  items: { Icon: LucideIcon; text: string }[];
+  iconColor: string;
+  accent?: boolean;
+}) {
+  return (
+    <Card className={cn("gap-3", accent ? "border-accent bg-accent/10" : "bg-transparent")}>
+      <Text variant="subhead" className={accent ? "text-accent" : "text-text-muted"}>
+        {title}
+      </Text>
+      {items.map(({ Icon, text }) => (
+        <View key={text} className="flex-row items-center gap-3">
+          <Icon size={18} strokeWidth={1.75} color={iconColor} />
+          <Text variant="bodySm" muted={!accent} className="flex-1">
+            {text}
+          </Text>
+        </View>
+      ))}
+    </Card>
   );
 }

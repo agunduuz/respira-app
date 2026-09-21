@@ -1,18 +1,14 @@
-import { WATER_QUICK_ADD_ML, computeExpectedIntakeMl, computeHourlyTargetMl } from "@respira/shared-types";
+import { WATER_QUICK_ADD_ML, computeExpectedIntakeMl } from "@respira/shared-types";
 import { router } from "expo-router";
 import { Bell, Droplet, Target, Trash2, Zap } from "lucide-react-native";
 import { useEffect, useState } from "react";
 import { ActivityIndicator, Pressable, ScrollView, TextInput, View } from "react-native";
 
 import { FeatureIntro } from "@/components/FeatureIntro";
+import { InfoTip } from "@/components/InfoTip";
 import { WaterWave } from "@/components/WaterWave";
+import { PermissionHint } from "@/components/PermissionHint";
 import { Button, Card, Screen, Text } from "@/components/ui";
-import {
-  DEFAULT_QUIET_HOURS,
-  cancelCategory,
-  ensurePermission,
-  scheduleRepeatingReminder,
-} from "@/lib/notifications";
 import {
   useDeleteIntake,
   useLogIntake,
@@ -20,10 +16,10 @@ import {
   useWaterGoal,
   type WaterIntakeLogRow,
 } from "@/lib/water-queries";
-import { useThemeStore } from "@/theme/theme-store";
-import { darkPalette, lightPalette, touchTarget } from "@/theme/tokens";
-
-const rgb = (c: string) => `rgb(${c.split(" ").join(", ")})`;
+import { WATER_TIPS, tipOfTheDay } from "@/lib/tips";
+import { touchTarget } from "@/theme/tokens";
+import { useReminders } from "@/lib/use-reminders";
+import { rgb, usePalette } from "@/theme/use-palette";
 
 export default function WaterScreen() {
   const { data: goalData, isPending } = useWaterGoal();
@@ -31,12 +27,11 @@ export default function WaterScreen() {
   const { data: intake } = useTodayIntake(!!goal);
   const log = useLogIntake();
   const del = useDeleteIntake();
-
-  const preference = useThemeStore((s) => s.preference);
-  const palette = preference === "light" ? lightPalette : darkPalette;
+  const palette = usePalette();
 
   const [customAmount, setCustomAmount] = useState("");
-  const [notifyState, setNotifyState] = useState<"idle" | "on" | "denied">("idle");
+  const reminders = useReminders();
+  const reminderOn = reminders.isActive("water");
   const [now, setNow] = useState(() => new Date());
 
   // Referans çizgisi dakikada bir tazelensin — saat başı tetiklenen bir sayaç değil,
@@ -80,11 +75,6 @@ export default function WaterScreen() {
     sleepTime: goal.sleepTime,
     now,
   });
-  const hourlyMl = computeHourlyTargetMl({
-    dailyTargetMl: goal.dailyTargetMl,
-    wakeTime: goal.wakeTime,
-    sleepTime: goal.sleepTime,
-  });
   const reachedGoal = totalMl >= goal.dailyTargetMl;
   const behind = totalMl < expectedMl;
 
@@ -99,25 +89,10 @@ export default function WaterScreen() {
     setCustomAmount("");
   }
 
-  async function enableReminders() {
-    const granted = await ensurePermission();
-    if (!granted) {
-      setNotifyState("denied");
-      return;
-    }
-    await scheduleRepeatingReminder({
-      category: "water",
-      title: "Su vakti",
-      body: `Saatlik hedefin yaklaşık ${hourlyMl}ml. Bir bardak su iyi gelir.`,
-      intervalSeconds: 3600,
-      quietHours: goal ? { start: goal.sleepTime, end: goal.wakeTime } : DEFAULT_QUIET_HOURS,
-    });
-    setNotifyState("on");
-  }
 
   return (
-    <Screen edges={["top"]}>
-      <ScrollView contentContainerClassName="items-center gap-6 p-4 pb-12">
+    <Screen edges={["bottom"]}>
+      <ScrollView contentContainerClassName="items-center gap-6 p-5 pb-12">
         <View className="w-full gap-1">
           <Text variant="label" muted>
             SU
@@ -172,7 +147,7 @@ export default function WaterScreen() {
               value={customAmount}
               onChangeText={setCustomAmount}
               style={{ minHeight: touchTarget.min }}
-              className="flex-1 rounded-md border border-border-strong bg-surface px-4 font-data text-data text-text"
+              className="flex-1 rounded-md border border-border-strong bg-surface px-4 font-body text-body text-text"
             />
             <Button title="Ekle" variant="secondary" onPress={addCustom} />
           </View>
@@ -195,6 +170,8 @@ export default function WaterScreen() {
           </Card>
         ) : null}
 
+        <InfoTip text={tipOfTheDay(WATER_TIPS)} className="w-full" />
+
         <Card className="w-full gap-3">
           <Text variant="title">Hatırlatmalar</Text>
           <Text variant="bodySm" muted>
@@ -202,25 +179,18 @@ export default function WaterScreen() {
             {goal.sleepTime}) gelir.
           </Text>
           <Button
-            title={notifyState === "on" ? "Hatırlatmalar açık" : "Saat başı hatırlat"}
-            variant={notifyState === "on" ? "secondary" : "primary"}
-            onPress={enableReminders}
+            title={reminderOn ? "Hatırlatmalar açık" : "Saat başı hatırlat"}
+            variant={reminderOn ? "secondary" : "primary"}
+            onPress={() => void reminders.enable("water")}
           />
-          {notifyState === "on" ? (
+          {reminderOn ? (
             <Button
               title="Hatırlatmaları kapat"
               variant="ghost"
-              onPress={async () => {
-                await cancelCategory("water");
-                setNotifyState("idle");
-              }}
+              onPress={() => void reminders.disable("water")}
             />
           ) : null}
-          {notifyState === "denied" ? (
-            <Text variant="bodySm" className="text-warm">
-              Bildirim izni verilmedi. Girişleri elle yapabilirsin.
-            </Text>
-          ) : null}
+          {reminders.permission === "denied" ? <PermissionHint fallback="Girişleri elle yapabilirsin." /> : null}
         </Card>
 
         <Button title="Hedefi düzenle" variant="secondary" onPress={() => router.push("/water-goal")} />

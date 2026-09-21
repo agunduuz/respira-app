@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { TextInput, View, type TextInputProps } from "react-native";
 
+import { FieldLabel } from "@/components/nutrition/FieldLabel";
 import { Text } from "@/components/ui";
 import { cn } from "@/theme/cn";
 import { touchTarget } from "@/theme/tokens";
@@ -18,21 +19,12 @@ export function Field({ label, hint, optional, error, className, onFocus, onBlur
 
   return (
     <View className="gap-2">
-      <View className="flex-row items-baseline gap-2">
-        <Text variant="label" muted>
-          {label.toLocaleUpperCase("tr-TR")}
-        </Text>
-        {optional ? (
-          <Text variant="label" muted>
-            opsiyonel
-          </Text>
-        ) : null}
-      </View>
+      <FieldLabel label={label} optional={optional} />
       <TextInput
         accessibilityLabel={label}
         style={{ minHeight: touchTarget.min }}
         className={cn(
-          "rounded-md border bg-surface px-4 font-data text-data text-text",
+          "rounded-md border bg-surface px-4 font-body text-body text-text",
           error ? "border-danger" : focused ? "border-accent" : "border-border-strong",
           className
         )}

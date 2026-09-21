@@ -1,12 +1,11 @@
 import { Check } from "lucide-react-native";
 import { Pressable, View } from "react-native";
 
+import { FieldLabel } from "@/components/nutrition/FieldLabel";
 import { Text } from "@/components/ui";
 import { cn } from "@/theme/cn";
-import { useThemeStore } from "@/theme/theme-store";
-import { darkPalette, lightPalette, touchTarget } from "@/theme/tokens";
-
-const rgb = (c: string) => `rgb(${c.split(" ").join(", ")})`;
+import { touchTarget } from "@/theme/tokens";
+import { rgb, usePalette } from "@/theme/use-palette";
 
 export interface Choice<T extends string> {
   value: T;
@@ -32,21 +31,11 @@ export function ChoiceGroup<T extends string>({
   onChange,
   optional,
 }: Props<T>) {
-  const preference = useThemeStore((s) => s.preference);
-  const palette = preference === "light" ? lightPalette : darkPalette;
+  const palette = usePalette();
 
   return (
     <View className="gap-2" accessibilityRole="radiogroup" accessibilityLabel={label}>
-      <View className="flex-row items-baseline gap-2">
-        <Text variant="label" muted>
-          {label.toLocaleUpperCase("tr-TR")}
-        </Text>
-        {optional ? (
-          <Text variant="label" muted>
-            opsiyonel
-          </Text>
-        ) : null}
-      </View>
+      <FieldLabel label={label} optional={optional} />
       <View className="flex-row flex-wrap gap-2">
         {choices.map((c) => {
           const selected = c.value === value;
@@ -60,8 +49,8 @@ export function ChoiceGroup<T extends string>({
               onPress={() => onChange(c.value)}
               style={{ minHeight: touchTarget.min }}
               className={cn(
-                "flex-row items-center justify-center gap-1.5 rounded-md border px-4",
-                selected ? "border-accent bg-accent" : "border-border-strong bg-surface"
+                "flex-row items-center justify-center gap-1.5 rounded-full border px-4",
+                selected ? "border-accent bg-accent/10" : "border-transparent bg-text/5"
               )}
             >
               {({ pressed }) => (
@@ -69,8 +58,8 @@ export function ChoiceGroup<T extends string>({
                   className="flex-row items-center gap-1.5"
                   style={{ transform: [{ scale: pressed ? 0.96 : 1 }] }}
                 >
-                  {selected ? <Check size={14} strokeWidth={2.5} color={rgb(palette.onAccent)} /> : null}
-                  <Text variant="label" className={selected ? "text-on-accent" : "text-text"}>
+                  {selected ? <Check size={14} strokeWidth={2.5} color={rgb(palette.accent)} /> : null}
+                  <Text variant="subhead" className={selected ? "text-accent" : "text-text"}>
                     {c.label}
                   </Text>
                 </View>

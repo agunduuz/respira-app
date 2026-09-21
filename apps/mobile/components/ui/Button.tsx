@@ -74,7 +74,7 @@ export function Button({
         >
           {loading ? <ActivityIndicator size="small" /> : null}
           {!loading && Icon ? <Icon size={18} strokeWidth={1.75} color={iconColor} /> : null}
-          <Text variant="label" className={label[variant]}>
+          <Text variant="button" className={label[variant]}>
             {title}
           </Text>
         </View>

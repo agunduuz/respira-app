@@ -1,13 +1,11 @@
 import { Tabs } from "expo-router";
-import { Droplet, Eye, PersonStanding, Settings, UtensilsCrossed, Wind } from "lucide-react-native";
+import { House, Sun, User, UtensilsCrossed } from "lucide-react-native";
 
-import { useThemeStore } from "@/theme/theme-store";
-import { darkPalette, lightPalette, touchTarget } from "@/theme/tokens";
+import { touchTarget } from "@/theme/tokens";
+import { rgb, usePalette } from "@/theme/use-palette";
 
 export default function TabLayout() {
-  const preference = useThemeStore((s) => s.preference);
-  const palette = preference === "light" ? lightPalette : darkPalette;
-  const rgb = (c: string) => `rgb(${c.split(" ").join(", ")})`;
+  const palette = usePalette();
 
   return (
     <Tabs
@@ -27,47 +25,31 @@ export default function TabLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: "Göz",
+          title: "Anasayfa",
           // Dekoratif değil — sekmenin anlamını taşıyor, ama görünür etiket
           // zaten var, o yüzden ikon erişilebilirlik ağacından gizleniyor.
-          tabBarIcon: ({ color }) => <Eye size={24} strokeWidth={1.75} color={color} />,
+          tabBarIcon: ({ color }) => <House size={24} strokeWidth={1.75} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="bugun"
+        options={{
+          title: "Bugün",
+          tabBarIcon: ({ color }) => <Sun size={24} strokeWidth={1.75} color={color} />,
         }}
       />
       <Tabs.Screen
         name="nutrition"
         options={{
           title: "Beslenme",
-          tabBarIcon: ({ color }) => (
-            <UtensilsCrossed size={24} strokeWidth={1.75} color={color} />
-          ),
+          tabBarIcon: ({ color }) => <UtensilsCrossed size={24} strokeWidth={1.75} color={color} />,
         }}
       />
       <Tabs.Screen
-        name="water"
+        name="profile"
         options={{
-          title: "Su",
-          tabBarIcon: ({ color }) => <Droplet size={24} strokeWidth={1.75} color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="posture"
-        options={{
-          title: "Duruş",
-          tabBarIcon: ({ color }) => <PersonStanding size={24} strokeWidth={1.75} color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="stress"
-        options={{
-          title: "Nefes",
-          tabBarIcon: ({ color }) => <Wind size={24} strokeWidth={1.75} color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="settings"
-        options={{
-          title: "Ayarlar",
-          tabBarIcon: ({ color }) => <Settings size={24} strokeWidth={1.75} color={color} />,
+          title: "Profil",
+          tabBarIcon: ({ color }) => <User size={24} strokeWidth={1.75} color={color} />,
         }}
       />
     </Tabs>

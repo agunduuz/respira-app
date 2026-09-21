@@ -1,54 +1,26 @@
-import type { RecordEyeStrainSessionInput } from "@respira/shared-types";
 import { Link } from "expo-router";
 import { BarChart3, ChevronRight, Clock, Play, Square } from "lucide-react-native";
-import { useCallback, useEffect, useRef, useState } from "react";
-import { AppState, Pressable, ScrollView, View } from "react-native";
+import { useEffect, useState } from "react";
+import { Pressable, ScrollView, View } from "react-native";
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated";
 
+import { InfoTip } from "@/components/InfoTip";
 import { ProgressRing } from "@/components/ProgressRing";
 import { Button, Card, Screen, Text } from "@/components/ui";
-import { useEyeStrainAnalytics, useEyeStrainSettings, useRecordSessions } from "@/lib/eye-strain-queries";
-import { useEyeStrainStore } from "@/lib/eye-strain-store";
-import { formatRemaining, viewTimer } from "@/lib/eye-strain-timer";
-import {
-  DEFAULT_QUIET_HOURS,
-  cancelCategory,
-  ensurePermission,
-  findMissedTriggers,
-  scheduleRepeatingReminder,
-} from "@/lib/notifications";
+import { useEyeStrainAnalytics } from "@/lib/eye-strain-queries";
+import { formatRemaining } from "@/lib/eye-strain-timer";
+import { EYE_TIPS, tipOfTheDay } from "@/lib/tips";
+import { useEyeTimerActions, useEyeTimerView } from "@/lib/use-eye-timer";
 import { useMotion } from "@/theme/use-motion";
-import { useThemeStore } from "@/theme/theme-store";
-import { darkPalette, lightPalette } from "@/theme/tokens";
+import { rgb, usePalette } from "@/theme/use-palette";
 
-const rgb = (c: string) => `rgb(${c.split(" ").join(", ")})`;
+export default function EyeScreen() {
+  const palette = usePalette();
 
-export default function TimerScreen() {
-  const preference = useThemeStore((s) => s.preference);
-  const palette = preference === "light" ? lightPalette : darkPalette;
-
-  const { data: settings } = useEyeStrainSettings();
   const { data: analytics } = useEyeStrainAnalytics("daily");
-  const recordSessions = useRecordSessions();
-  const store = useEyeStrainStore();
-  const [now, setNow] = useState(() => Date.now());
+  const { view, durations } = useEyeTimerView();
+  const { start, stop, finishBreak } = useEyeTimerActions();
   const [permission, setPermission] = useState<boolean | null>(null);
-
-  useEffect(() => {
-    void store.hydrate();
-    // hydrate yalnızca bir kez çalışmalı.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // Ekran görünürken saniyede bir tik. Sayaç bu tike GÜVENMİYOR — kalan süre
-  // her seferinde duvar saatinden hesaplanıyor, tik sadece yeniden çizim için.
-  useEffect(() => {
-    const id = setInterval(() => setNow(Date.now()), 500);
-    return () => clearInterval(id);
-  }, []);
-
-  const durations = settings ?? { intervalMinutes: 20, breakSeconds: 20 };
-  const view = viewTimer(store, durations, now);
 
   // Sayaç ilk göründüğünde hafif bir fade+scale — reduced motion'da anında biter.
   const { duration: motionDuration } = useMotion();
@@ -63,80 +35,8 @@ export default function TimerScreen() {
     transform: [{ scale: 0.96 + enter.value * 0.04 }],
   }));
 
-  /** Mola sonucunu kaydeder ve çalışma fazına döner. */
-  const finishBreak = useCallback(
-    (status: "COMPLETED" | "SKIPPED") => {
-      const at = store.startedAt ?? Date.now();
-      store.respond(Date.now());
-      recordSessions.mutate([{ status, triggeredAt: new Date(at).toISOString() }]);
-      store.start();
-    },
-    [store, recordSessions]
-  );
-
-  // Çalışma fazı dolduğunda mola fazına geç.
-  useEffect(() => {
-    if (view.phase === "working" && view.elapsed) {
-      store.beginBreak();
-    }
-  }, [view.phase, view.elapsed, store]);
-
-  // Mola süresi dolarsa kullanıcı yanıtlamamış demektir — otomatik tamamlandı
-  // saymıyoruz; kullanıcı ekranı görüp karar verene kadar mola ekranı kalıyor.
-
-  // Uygulama öne geldiğinde kaçırılan molaları uzlaştır.
-  const reconciling = useRef(false);
-  useEffect(() => {
-    const sub = AppState.addEventListener("change", (state) => {
-      if (state !== "active" || reconciling.current) return;
-      const s = useEyeStrainStore.getState();
-      if (!s.hydrated || s.scheduledAt.length === 0) return;
-
-      const missed = findMissedTriggers({
-        scheduled: s.scheduledAt.map((t) => new Date(t)),
-        now: new Date(),
-        lastRespondedAt: s.lastRespondedAt ? new Date(s.lastRespondedAt) : null,
-      });
-      if (missed.length === 0) return;
-
-      reconciling.current = true;
-      const rows: RecordEyeStrainSessionInput[] = missed.map((d) => ({
-        status: "MISSED",
-        triggeredAt: d.toISOString(),
-      }));
-      recordSessions.mutate(rows, {
-        onSettled: () => {
-          reconciling.current = false;
-        },
-        onSuccess: () => s.respond(Date.now()),
-      });
-    });
-    return () => sub.remove();
-  }, [recordSessions]);
-
   async function startTimer() {
-    const granted = await ensurePermission();
-    setPermission(granted);
-
-    store.start();
-
-    if (granted) {
-      const times = await scheduleRepeatingReminder({
-        category: "eye_strain",
-        title: "Gözlerine mola ver",
-        body: `${durations.breakSeconds} saniye boyunca 6 metre uzağa bak.`,
-        intervalSeconds: durations.intervalMinutes * 60,
-        quietHours: DEFAULT_QUIET_HOURS,
-      });
-      store.setScheduled(times.map((t) => t.getTime()));
-    } else {
-      store.setScheduled([]);
-    }
-  }
-
-  async function stopTimer() {
-    await cancelCategory("eye_strain");
-    store.stop();
+    setPermission(await start());
   }
 
   // --- MOLA EKRANI ---
@@ -173,8 +73,8 @@ export default function TimerScreen() {
 
   // --- SAYAÇ EKRANI ---
   return (
-    <Screen edges={["top"]}>
-      <ScrollView contentContainerClassName="gap-6 p-4 pb-12">
+    <Screen edges={["bottom"]}>
+      <ScrollView contentContainerClassName="gap-6 p-5 pb-12">
         <Animated.View style={enterStyle} className="flex-row items-start justify-between">
           <View className="gap-1">
             <Text variant="label" muted>
@@ -218,10 +118,10 @@ export default function TimerScreen() {
             variant="secondary"
             icon={Square}
             iconColor={rgb(palette.text)}
-            onPress={stopTimer}
+            onPress={() => void stop()}
           />
         ) : (
-          <Button title="Sayacı başlat" icon={Play} iconColor={rgb(palette.onAccent)} onPress={startTimer} />
+          <Button title="Sayacı başlat" icon={Play} iconColor={rgb(palette.onAccent)} onPress={() => void startTimer()} />
         )}
 
         {permission === false ? (
@@ -261,6 +161,8 @@ export default function TimerScreen() {
             />
           </Card>
         </View>
+
+        <InfoTip text={tipOfTheDay(EYE_TIPS)} />
 
         <Text variant="bodySm" muted>
           Bu uygulama bir sağlık hizmeti sağlamaz, yalnızca bir hatırlatma aracıdır.
@@ -308,13 +210,13 @@ function SettingsRow({
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={label}
-        className="flex-row items-center gap-3 px-4 py-3.5"
+        className="flex-row items-center gap-3 px-5 py-3.5"
         style={{ minHeight: 48 }}
       >
         {({ pressed }) => (
           <View className="flex-1 flex-row items-center gap-3" style={{ opacity: pressed ? 0.65 : 1 }}>
             <View
-              className="items-center justify-center rounded-full bg-elevated"
+              className="items-center justify-center rounded-full bg-accent/10"
               style={{ width: 32, height: 32 }}
             >
               <Icon size={16} strokeWidth={1.75} color={accent} />

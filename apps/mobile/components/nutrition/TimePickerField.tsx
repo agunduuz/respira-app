@@ -2,12 +2,11 @@ import { Clock } from "lucide-react-native";
 import { useState } from "react";
 import { Modal, Pressable, ScrollView, View } from "react-native";
 
+import { FieldLabel } from "@/components/nutrition/FieldLabel";
 import { Button, Text } from "@/components/ui";
 import { cn } from "@/theme/cn";
-import { useThemeStore } from "@/theme/theme-store";
-import { darkPalette, lightPalette, touchTarget } from "@/theme/tokens";
-
-const rgb = (c: string) => `rgb(${c.split(" ").join(", ")})`;
+import { touchTarget } from "@/theme/tokens";
+import { rgb, usePalette } from "@/theme/use-palette";
 
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
 const MINUTES = Array.from({ length: 12 }, (_, i) => i * 5);
@@ -28,8 +27,7 @@ interface Props {
  * kısmındaki alanları kapatma sorununu ortadan kaldırıyor (bkz. WaterGoalScreen).
  */
 export function TimePickerField({ label, value, onChange, hint, error }: Props) {
-  const preference = useThemeStore((s) => s.preference);
-  const palette = preference === "light" ? lightPalette : darkPalette;
+  const palette = usePalette();
   const [open, setOpen] = useState(false);
 
   const [h, m] = value.split(":").map((n) => Number(n));
@@ -42,9 +40,7 @@ export function TimePickerField({ label, value, onChange, hint, error }: Props) 
 
   return (
     <View className="gap-2">
-      <Text variant="label" muted>
-        {label.toLocaleUpperCase("tr-TR")}
-      </Text>
+      <FieldLabel label={label} />
 
       <Pressable
         onPress={() => setOpen(true)}
@@ -56,7 +52,7 @@ export function TimePickerField({ label, value, onChange, hint, error }: Props) 
           error ? "border-danger" : "border-border-strong"
         )}
       >
-        <Text variant="data">{value}</Text>
+        <Text variant="body">{value}</Text>
         <Clock size={18} strokeWidth={1.75} color={rgb(palette.textMuted)} />
       </Pressable>
 
@@ -79,13 +75,11 @@ export function TimePickerField({ label, value, onChange, hint, error }: Props) 
           onPress={() => setOpen(false)}
         />
         <View
-          className="gap-4 rounded-t-xl border-t border-border bg-surface p-4"
+          className="gap-4 rounded-t-xl border-t border-border bg-surface p-5"
           style={{ position: "absolute", left: 0, right: 0, bottom: 0 }}
         >
           <View className="items-center gap-1">
-            <Text variant="label" muted>
-              {label.toLocaleUpperCase("tr-TR")}
-            </Text>
+            <Text variant="title">{label}</Text>
             <Text variant="displayLg">{`${pad2(hour)}:${pad2(minute)}`}</Text>
           </View>
 
@@ -123,10 +117,10 @@ function TimeCell({ label, selected, onPress }: { label: string; selected: boole
       style={{ minHeight: touchTarget.min - 8 }}
       className={cn(
         "items-center justify-center rounded-md border",
-        selected ? "border-accent bg-accent" : "border-border bg-elevated"
+        selected ? "border-accent bg-accent/10" : "border-transparent bg-text/5"
       )}
     >
-      <Text variant="data" className={selected ? "text-on-accent" : "text-text"}>
+      <Text variant="data" className={selected ? "text-accent" : "text-text"}>
         {label}
       </Text>
     </Pressable>

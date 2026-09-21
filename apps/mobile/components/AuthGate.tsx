@@ -1,6 +1,6 @@
 import { router, useSegments } from "expo-router";
 import { useEffect } from "react";
-import { ActivityIndicator, View } from "react-native";
+import { ActivityIndicator, StyleSheet, View } from "react-native";
 
 import { useAuthStore } from "@/lib/auth-store";
 import { useBootstrap, useConsentStatus } from "@/lib/queries";
@@ -36,44 +36,32 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
 
   const missingCount = consents.data?.missing.length ?? null;
 
-  useEffect(() => {
-    if (authLoading || !welcomeHydrated) return;
+  // Kullanıcının şu an olması gereken rota; zaten doğru yerdeyse null.
+  // Render sırasında hesaplanıyor ki yanlış ekran hiç çizilmesin.
+  const target = ((): "/(welcome)" | "/sign-in" | "/aydinlatma" | "/acik-riza" | "/" | null => {
+    if (authLoading || !welcomeHydrated) return null;
 
     if (!signedIn) {
-      if (!hasSeenWelcome) {
-        if (!inWelcomeGroup) router.replace("/(welcome)");
-        return;
-      }
-      if (!inAuthGroup) router.replace("/sign-in");
-      return;
+      if (!hasSeenWelcome) return inWelcomeGroup ? null : "/(welcome)";
+      return inAuthGroup ? null : "/sign-in";
     }
 
     // Rıza durumu daha gelmediyse yönlendirme yapma — yanlış ekrana atmayalım.
-    if (missingCount === null) return;
+    if (missingCount === null) return null;
 
     if (missingCount > 0) {
-      if (!inOnboarding) {
-        // Aydınlatma hâlâ eksikse baştan, sadece açık rıza eksikse ikinci adımdan.
-        const needsAydinlatma = consents.data?.missing.some(
-          (m) => m.consentType === "AYDINLATMA_METNI"
-        );
-        router.replace(needsAydinlatma ? "/aydinlatma" : "/acik-riza");
-      }
-      return;
+      if (inOnboarding) return null;
+      // Aydınlatma hâlâ eksikse baştan, sadece açık rıza eksikse ikinci adımdan.
+      const needsAydinlatma = consents.data?.missing.some((m) => m.consentType === "AYDINLATMA_METNI");
+      return needsAydinlatma ? "/aydinlatma" : "/acik-riza";
     }
 
-    if (inAuthGroup || inOnboarding) router.replace("/");
-  }, [
-    authLoading,
-    welcomeHydrated,
-    hasSeenWelcome,
-    inWelcomeGroup,
-    signedIn,
-    missingCount,
-    inAuthGroup,
-    inOnboarding,
-    consents.data,
-  ]);
+    return inAuthGroup || inOnboarding ? "/" : null;
+  })();
+
+  useEffect(() => {
+    if (target) router.replace(target);
+  }, [target]);
 
   const settling =
     authLoading ||
@@ -88,5 +76,16 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
     );
   }
 
-  return <>{children}</>;
+  return (
+    <>
+      {children}
+      {/* Yönlendirme tamamlanana kadar yanlış ekranın (ör. sekmeler) bir kare
+          görünmesini engeller. */}
+      {target ? (
+        <View style={StyleSheet.absoluteFill} className="items-center justify-center bg-bg">
+          <ActivityIndicator />
+        </View>
+      ) : null}
+    </>
+  );
 }

@@ -7,14 +7,11 @@ import { ActivityIndicator, ScrollView, View } from "react-native";
 import { Button, Card, Screen, Segmented, Text } from "@/components/ui";
 import { useNutritionReport } from "@/lib/nutrition-queries";
 import { isSkiaUsable } from "@/lib/skia-available";
-import { useThemeStore } from "@/theme/theme-store";
-import { darkPalette, lightPalette } from "@/theme/tokens";
+import { rgb, usePalette } from "@/theme/use-palette";
 
 const victory = isSkiaUsable()
   ? (require("victory-native") as typeof import("victory-native"))
   : null;
-
-const rgb = (c: string) => `rgb(${c.split(" ").join(", ")})`;
 
 const PERIOD_OPTIONS = [
   { value: "daily", label: "Günlük" },
@@ -32,8 +29,7 @@ const PERIOD_OPTIONS = [
 export default function NutritionReportScreen() {
   const [period, setPeriod] = useState<NutritionPeriod>("weekly");
   const { data, isPending, isError } = useNutritionReport(period);
-  const preference = useThemeStore((s) => s.preference);
-  const palette = preference === "light" ? lightPalette : darkPalette;
+  const palette = usePalette();
 
   const points = (data?.buckets ?? [])
     .filter((b) => b.hasData)
@@ -49,7 +45,7 @@ export default function NutritionReportScreen() {
 
   return (
     <Screen edges={["bottom"]}>
-      <ScrollView contentContainerClassName="gap-4 p-4 pb-12">
+      <ScrollView contentContainerClassName="gap-4 p-5 pb-12">
         <View className="gap-1">
           <Text variant="label" muted>
             RAPOR
@@ -80,7 +76,7 @@ export default function NutritionReportScreen() {
                 style={{ position: "absolute", width: 64, height: 64, borderRadius: 32, opacity: 0.12 }}
               />
               <View
-                className="items-center justify-center rounded-full bg-elevated"
+                className="items-center justify-center rounded-full bg-accent/10"
                 style={{ width: 48, height: 48 }}
               >
                 <ClipboardList size={22} strokeWidth={1.75} color={rgb(palette.accent)} />

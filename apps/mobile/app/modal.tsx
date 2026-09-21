@@ -5,7 +5,7 @@ import { Card, Screen, Text } from "@/components/ui";
 export default function ModalScreen() {
   return (
     <Screen edges={["bottom"]}>
-      <ScrollView contentContainerClassName="gap-4 p-4">
+      <ScrollView contentContainerClassName="gap-4 p-5">
         <Text variant="title">Respira hakkında</Text>
         <Card className="gap-2">
           <Text variant="body">

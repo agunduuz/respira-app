@@ -3,6 +3,7 @@ import { Pressable, View } from "react-native";
 
 import { cn } from "@/theme/cn";
 import { touchTarget } from "@/theme/tokens";
+import { rgb, usePalette } from "@/theme/use-palette";
 import { Text } from "./Text";
 
 export interface CheckboxProps {
@@ -19,6 +20,8 @@ export interface CheckboxProps {
  * böylece yanlışlıkla true başlatmak mümkün olmuyor.
  */
 export function Checkbox({ checked, onChange, label, disabled, className }: CheckboxProps) {
+  const { onAccent } = usePalette();
+
   return (
     <Pressable
       accessibilityRole="checkbox"
@@ -41,7 +44,7 @@ export function Checkbox({ checked, onChange, label, disabled, className }: Chec
             )}
             style={{ opacity: pressed ? 0.65 : 1 }}
           >
-            {checked ? <Check size={16} strokeWidth={3} color="rgb(5, 35, 26)" /> : null}
+            {checked ? <Check size={16} strokeWidth={3} color={rgb(onAccent)} /> : null}
           </View>
           <Text variant="bodySm" className="flex-1">
             {label}

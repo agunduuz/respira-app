@@ -52,6 +52,54 @@ export const lightPalette = {
 
 export type PaletteKey = keyof typeof darkPalette;
 
+/**
+ * Özellik başına aksan (UI-004). Taban renkler (zemin, yüzey, metin) her yerde
+ * AYNI kalır — yalnızca aksan değişir. Böylece her modülün kendi kimliği olur
+ * ama uygulama dağınık bir pastel koleksiyonuna dönüşmez.
+ *
+ * Hepsi WCAG AA: açık temada beyaz kart üstünde en düşük 5.36:1, koyu temada
+ * yüzey üstünde en düşük 8.02:1.
+ */
+export type Feature = "kurumsal" | "goz" | "beslenme" | "su" | "durus" | "nefes";
+
+export const featureAccents: Record<Feature, { light: Accent; dark: Accent }> = {
+  /** Anasayfa, Bugün, Ayarlar — markanın mint yeşili. */
+  kurumsal: {
+    light: { accent: "11 107 73", onAccent: "255 255 255" }, // #0B6B49
+    dark: { accent: "124 224 184", onAccent: "5 35 26" }, // #7CE0B8
+  },
+  /** Göz — kahve/ela tonları: ekran ışığının karşısında sıcak ve yumuşak. */
+  goz: {
+    light: { accent: "122 74 33", onAccent: "255 255 255" }, // #7A4A21
+    dark: { accent: "221 184 146", onAccent: "42 26 12" }, // #DDB892
+  },
+  /** Beslenme — kavrulmuş amber. */
+  beslenme: {
+    light: { accent: "138 91 18", onAccent: "255 255 255" }, // #8A5B12
+    dark: { accent: "232 192 122", onAccent: "36 23 5" }, // #E8C07A
+  },
+  /** Su — mavi. */
+  su: {
+    light: { accent: "18 96 143", onAccent: "255 255 255" }, // #12608F
+    dark: { accent: "134 199 236", onAccent: "4 32 47" }, // #86C7EC
+  },
+  /** Duruş — kil/terrakota: harekete çağıran toprak tonu. */
+  durus: {
+    light: { accent: "156 66 33", onAccent: "255 255 255" }, // #9C4221
+    dark: { accent: "240 169 140", onAccent: "46 16 4" }, // #F0A98C
+  },
+  /** Nefes — sakin indigo; diğerlerinden daha serin ve sofistike. */
+  nefes: {
+    light: { accent: "76 79 159", onAccent: "255 255 255" }, // #4C4F9F
+    dark: { accent: "185 189 242", onAccent: "20 21 58" }, // #B9BDF2
+  },
+};
+
+interface Accent {
+  accent: string;
+  onAccent: string;
+}
+
 /** 4/8pt ritmi — pro-rules "8dp spacing rhythm". */
 export const spacing = {
   0.5: 2,
@@ -88,8 +136,8 @@ export const radius = {
 
 export const fontFamily = {
   /** Sayaçlar ve büyük rakamlar — en sık bakılan öğeler. */
-  display: "SpaceGrotesk_600SemiBold",
-  displayBold: "SpaceGrotesk_700Bold",
+  display: "Fraunces_600SemiBold",
+  displayBold: "Fraunces_700Bold",
   body: "Inter_400Regular",
   bodyMedium: "Inter_500Medium",
   bodySemiBold: "Inter_600SemiBold",
@@ -107,6 +155,10 @@ export const typeScale = {
   title: { fontSize: 22, lineHeight: 28 },
   body: { fontSize: 16, lineHeight: 24 },
   bodySm: { fontSize: 14, lineHeight: 21 },
+  /** Form etiketleri ve seçim çipleri — Apple HIG "subheadline" karşılığı. */
+  subhead: { fontSize: 15, lineHeight: 20 },
+  /** Buton metni — gövde boyutunda, kalınlıkla ayrışır (HIG). */
+  button: { fontSize: 16, lineHeight: 22 },
   label: { fontSize: 13, lineHeight: 18 },
   data: { fontSize: 15, lineHeight: 20 },
 } as const;

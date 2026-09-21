@@ -1,28 +1,22 @@
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { Bell, PersonStanding, Sparkles, TrendingUp } from "lucide-react-native";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ActivityIndicator, ScrollView, View } from "react-native";
 
 import { FeatureIntro } from "@/components/FeatureIntro";
+import { InfoTip } from "@/components/InfoTip";
 import { ProgressRing } from "@/components/ProgressRing";
+import { PermissionHint } from "@/components/PermissionHint";
 import { Button, Card, Screen, Text } from "@/components/ui";
 import { formatRemaining } from "@/lib/eye-strain-timer";
-import {
-  DEFAULT_QUIET_HOURS,
-  cancelCategory,
-  ensurePermission,
-  scheduleRepeatingReminder,
-} from "@/lib/notifications";
 import {
   usePostureProfile,
   usePostureSession,
   useRecordBreak,
   useTodayBreaks,
 } from "@/lib/posture-queries";
-import { useThemeStore } from "@/theme/theme-store";
-import { darkPalette, lightPalette } from "@/theme/tokens";
-
-const rgb = (c: string) => `rgb(${c.split(" ").join(", ")})`;
+import { useReminders } from "@/lib/use-reminders";
+import { rgb, usePalette } from "@/theme/use-palette";
 
 export default function PostureScreen() {
   const { data: profileData, isPending } = usePostureProfile();
@@ -30,15 +24,18 @@ export default function PostureScreen() {
   const { data: session, isPending: sessionPending } = usePostureSession(!!profile);
   const { data: breaks } = useTodayBreaks(!!profile);
   const record = useRecordBreak();
+  const palette = usePalette();
 
-  const preference = useThemeStore((s) => s.preference);
-  const palette = preference === "light" ? lightPalette : darkPalette;
+  // Bugün ekranındaki "Molaya başla" doğrudan seti başlatır (?start=1).
+  const { start: startParam } = useLocalSearchParams<{ start?: string }>();
+  const autoStarted = useRef(false);
 
   const [running, setRunning] = useState(false);
   const [index, setIndex] = useState(0);
   const [startedAt, setStartedAt] = useState<number | null>(null);
   const [now, setNow] = useState(() => Date.now());
-  const [notifyState, setNotifyState] = useState<"idle" | "on" | "denied">("idle");
+  const reminders = useReminders();
+  const reminderOn = reminders.isActive("posture");
 
   useEffect(() => {
     if (!running) return;
@@ -67,6 +64,13 @@ export default function PostureScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [running, remaining, index, exercises.length]);
 
+  useEffect(() => {
+    if (startParam !== "1" || autoStarted.current) return;
+    if (!profile || exercises.length === 0) return;
+    autoStarted.current = true;
+    start();
+  }, [startParam, profile, exercises.length]);
+
   function start() {
     setIndex(0);
     setStartedAt(Date.now());
@@ -83,26 +87,6 @@ export default function PostureScreen() {
     });
   }
 
-  /**
-   * docs/05: saat başı hatırlatma, yalnızca mesai saatleri içinde.
-   * Mesai penceresi sunucuda sessiz saat aralığına çevrilmiş olarak geliyor —
-   * planlayıcı o pencereye düşen tetiklemeleri atlıyor.
-   */
-  async function enableReminders() {
-    const granted = await ensurePermission();
-    if (!granted) {
-      setNotifyState("denied");
-      return;
-    }
-    await scheduleRepeatingReminder({
-      category: "posture",
-      title: "Duruş molası",
-      body: `${session?.minutesPerHourAvailable ?? 5} dakikalık kısa bir set seni bekliyor.`,
-      intervalSeconds: 3600,
-      quietHours: session?.quietHours ?? DEFAULT_QUIET_HOURS,
-    });
-    setNotifyState("on");
-  }
 
   if (isPending) {
     return (
@@ -172,8 +156,8 @@ export default function PostureScreen() {
   // --- ANA EKRAN ---
   const today = breaks?.today;
   return (
-    <Screen edges={["top"]}>
-      <ScrollView contentContainerClassName="gap-6 p-4 pb-12">
+    <Screen edges={["bottom"]}>
+      <ScrollView contentContainerClassName="gap-6 p-5 pb-12">
         <View className="gap-1">
           <Text variant="label" muted>
             DURUŞ
@@ -232,12 +216,7 @@ export default function PostureScreen() {
 
         {/* docs/05 — meslek türüne göre rotasyonlu bilgi notu */}
         {session?.fyi ? (
-          <Card className="gap-1">
-            <Text variant="label" muted>
-              BİLİYOR MUYDUN
-            </Text>
-            <Text variant="body">{session.fyi.text}</Text>
-          </Card>
+          <InfoTip text={session.fyi.text} />
         ) : null}
 
         <Card className="gap-3">
@@ -248,25 +227,18 @@ export default function PostureScreen() {
               : "Mesai saati tanımlamadığın için hatırlatmalar gün boyu gelebilir."}
           </Text>
           <Button
-            title={notifyState === "on" ? "Hatırlatmalar açık" : "Saat başı hatırlat"}
-            variant={notifyState === "on" ? "secondary" : "primary"}
-            onPress={enableReminders}
+            title={reminderOn ? "Hatırlatmalar açık" : "Saat başı hatırlat"}
+            variant={reminderOn ? "secondary" : "primary"}
+            onPress={() => void reminders.enable("posture")}
           />
-          {notifyState === "on" ? (
+          {reminderOn ? (
             <Button
               title="Hatırlatmaları kapat"
               variant="ghost"
-              onPress={async () => {
-                await cancelCategory("posture");
-                setNotifyState("idle");
-              }}
+              onPress={() => void reminders.disable("posture")}
             />
           ) : null}
-          {notifyState === "denied" ? (
-            <Text variant="bodySm" className="text-warm">
-              Bildirim izni verilmedi. Molaları elle başlatabilirsin.
-            </Text>
-          ) : null}
+          {reminders.permission === "denied" ? <PermissionHint fallback="Molaları elle başlatabilirsin." /> : null}
         </Card>
 
         <Button title="Formu düzenle" variant="secondary" onPress={() => router.push("/posture-form")} />

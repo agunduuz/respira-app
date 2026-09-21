@@ -7,10 +7,7 @@ import { ProgressRing } from "@/components/ProgressRing";
 import { Button, Card, Screen, Segmented, Text } from "@/components/ui";
 import { useEyeStrainAnalytics } from "@/lib/eye-strain-queries";
 import { isSkiaUsable } from "@/lib/skia-available";
-import { useThemeStore } from "@/theme/theme-store";
-import { darkPalette, lightPalette } from "@/theme/tokens";
-
-const rgb = (c: string) => `rgb(${c.split(" ").join(", ")})`;
+import { rgb, usePalette } from "@/theme/use-palette";
 
 const PERIOD_OPTIONS = [
   { value: "daily", label: "Günlük" },
@@ -36,8 +33,7 @@ const victory = isSkiaUsable()
 
 export default function EyeAnalysisScreen() {
   const [period, setPeriod] = useState<EyeStrainPeriod>("weekly");
-  const preference = useThemeStore((s) => s.preference);
-  const palette = preference === "light" ? lightPalette : darkPalette;
+  const palette = usePalette();
   const { data, isPending, isError, refetch, isRefetching } = useEyeStrainAnalytics(period);
 
   // Grafik "uyum yüzdesi"ni gösteriyor. Mola tetiklenmemiş kovalarda oran null;
@@ -58,7 +54,7 @@ export default function EyeAnalysisScreen() {
 
   return (
     <Screen edges={["top"]}>
-      <ScrollView contentContainerClassName="gap-6 p-4 pb-12">
+      <ScrollView contentContainerClassName="gap-6 p-5 pb-12">
         <View className="gap-1">
           <Text variant="label" muted>
             GÖZ ANALİZİ

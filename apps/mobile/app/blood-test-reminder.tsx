@@ -127,11 +127,11 @@ export default function BloodTestReminderScreen() {
   }
 
   const inputClass =
-    "rounded-md border border-border-strong bg-surface px-4 font-data text-data text-text";
+    "rounded-md border border-border-strong bg-surface px-4 font-body text-body text-text";
 
   return (
     <Screen edges={["bottom"]}>
-      <ScrollView contentContainerClassName="gap-4 p-4 pb-8">
+      <ScrollView contentContainerClassName="gap-4 p-5 pb-8">
         {step === "ask" ? (
           <Card className="gap-3">
             <Text variant="title">Kan tahlili hatırlatması</Text>

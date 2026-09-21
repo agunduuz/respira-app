@@ -5,20 +5,29 @@ import {
   waterGoalSchema,
 } from "@respira/shared-types";
 import { router } from "expo-router";
-import { useEffect, useState } from "react";
-import { KeyboardAvoidingView, Platform, ScrollView, View } from "react-native";
+import { useCallback, useEffect, useState } from "react";
+import { View } from "react-native";
 
+import { StepFlow } from "@/components/flow/StepFlow";
 import { Field } from "@/components/nutrition/Field";
 import { TimePickerField } from "@/components/nutrition/TimePickerField";
-import { Button, Card, Screen, Text } from "@/components/ui";
+import { Button, Card, Text } from "@/components/ui";
 import { useNutritionProfile } from "@/lib/nutrition-queries";
 import { useSaveWaterGoal, useWaterGoal } from "@/lib/water-queries";
 
-/** docs/06 — hedef, kilodan otomatik hesaplanır ve kullanıcı elle değiştirebilir. */
+const STEP_TITLES = ["Günlük hedefin", "Ne zaman uyanıksın?"];
+
+/**
+ * docs/06 — hedef, kilodan otomatik hesaplanır ve kullanıcı elle
+ * değiştirebilir. 2 kısa adım: hedef, sonra uyanıklık penceresi.
+ */
 export default function WaterGoalScreen() {
   const { data } = useWaterGoal();
   const { data: nutrition } = useNutritionProfile();
   const save = useSaveWaterGoal();
+
+  const [step, setStep] = useState(1);
+  const goBack = useCallback(() => setStep((s) => Math.max(1, s - 1)), []);
 
   const [weight, setWeight] = useState("");
   const [target, setTarget] = useState("");
@@ -74,62 +83,69 @@ export default function WaterGoalScreen() {
     });
 
     if (!parsed.success) {
-      setError(parsed.error.issues[0]?.message ?? "Formda eksik veya hatalı alan var.");
+      const issue = parsed.error.issues[0];
+      setError(issue?.message ?? "Formda eksik veya hatalı alan var.");
+      setStep(issue?.path[0] === "dailyTargetMl" ? 1 : 2);
       return;
     }
 
     try {
       await save.mutateAsync(parsed.data);
       if (router.canGoBack()) router.back();
-      else router.replace("/(tabs)/water");
+      else router.replace("/water");
     } catch {
       setError("Kaydedilemedi, tekrar dene.");
     }
   }
 
+  const total = STEP_TITLES.length;
+  const targetValid = Number(target) > 0;
+
   return (
-    <Screen edges={["top"]}>
-      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} className="flex-1">
-      <ScrollView contentContainerClassName="gap-6 p-4 pb-12" keyboardShouldPersistTaps="handled">
-        <View className="gap-1">
-          <Text variant="label" muted>
-            SU HEDEFİ
-          </Text>
-          <Text variant="displayLg">Günlük hedefin</Text>
-        </View>
+    <StepFlow
+      step={step}
+      total={total}
+      title={STEP_TITLES[step - 1]}
+      onBack={goBack}
+      onNext={step < total ? () => setStep(step + 1) : submit}
+      nextDisabled={step === 1 && !targetValid}
+      loading={save.isPending}
+      error={error}
+    >
+      {step === 1 ? (
+        <>
+          <Card className="gap-3">
+            <Field
+              label="Kilo (kg)"
+              optional
+              hint="Öneri hesaplamak için kullanılır, kaydedilmez."
+              keyboardType="decimal-pad"
+              value={weight}
+              onChangeText={setWeight}
+            />
+            <Button title="Kilodan hesapla" variant="secondary" onPress={recalculate} />
+          </Card>
 
-        <Card className="gap-3">
-          <Field
-            label="Kilo (kg)"
-            optional
-            hint="Öneri hesaplamak için kullanılır, kaydedilmez."
-            keyboardType="decimal-pad"
-            value={weight}
-            onChangeText={setWeight}
-          />
-          <Button title="Kilodan hesapla" variant="secondary" onPress={recalculate} />
-        </Card>
+          <Card className="gap-3">
+            <Field
+              label="Günlük hedef (ml)"
+              keyboardType="number-pad"
+              value={target}
+              onChangeText={(v) => {
+                setTarget(v);
+                setCustomized(true);
+              }}
+            />
+            <Text variant="bodySm" muted>
+              Bu genel bir tahmindir; sıcak hava, yoğun egzersiz gibi durumlarda ihtiyacın
+              artabilir.
+            </Text>
+          </Card>
+        </>
+      ) : null}
 
+      {step === 2 ? (
         <Card className="gap-3">
-          <Field
-            label="Günlük hedef (ml)"
-            keyboardType="number-pad"
-            value={target}
-            onChangeText={(v) => {
-              setTarget(v);
-              setCustomized(true);
-            }}
-          />
-          <Text variant="bodySm" muted>
-            Bu genel bir tahmindir; sıcak hava, yoğun egzersiz gibi durumlarda ihtiyacın
-            artabilir.
-          </Text>
-        </Card>
-
-        <Card className="gap-3">
-          <Text variant="label" muted>
-            UYANIKLIK PENCERESİ
-          </Text>
           <Text variant="bodySm" muted>
             Saatlik referans ve hatırlatmalar bu aralığa göre dağıtılır.
           </Text>
@@ -142,16 +158,7 @@ export default function WaterGoalScreen() {
             </View>
           </View>
         </Card>
-
-        {error ? (
-          <Text variant="bodySm" className="text-danger">
-            {error}
-          </Text>
-        ) : null}
-
-        <Button title="Kaydet" loading={save.isPending} onPress={submit} />
-      </ScrollView>
-      </KeyboardAvoidingView>
-    </Screen>
+      ) : null}
+    </StepFlow>
   );
 }

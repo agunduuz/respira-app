@@ -63,11 +63,11 @@ export default function EyeStrainSettingsScreen() {
   }
 
   const inputClass =
-    "rounded-md border border-border-strong bg-surface px-4 font-data text-data text-text";
+    "rounded-md border border-border-strong bg-surface px-4 font-body text-body text-text";
 
   return (
     <Screen edges={["bottom"]}>
-      <ScrollView contentContainerClassName="gap-4 p-4">
+      <ScrollView contentContainerClassName="gap-4 p-5">
         <Card className="gap-4">
           <View className="gap-2">
             <Text variant="label" muted>

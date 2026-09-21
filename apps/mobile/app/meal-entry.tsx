@@ -84,7 +84,7 @@ export default function MealEntryScreen() {
 
   return (
     <Screen edges={["bottom"]}>
-      <ScrollView contentContainerClassName="gap-4 p-4 pb-8">
+      <ScrollView contentContainerClassName="gap-4 p-5 pb-8">
         <Card className="gap-4">
           <Field label="Öğün adı" value={label} onChangeText={setLabel} maxLength={40} />
 

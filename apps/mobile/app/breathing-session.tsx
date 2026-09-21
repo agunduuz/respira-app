@@ -12,10 +12,7 @@ import { Button, Screen, Text } from "@/components/ui";
 import { PHASE_LABELS, breathingStateAt } from "@/lib/breathing-cycle";
 import { formatRemaining } from "@/lib/eye-strain-timer";
 import { useRecordSession } from "@/lib/stress-queries";
-import { useThemeStore } from "@/theme/theme-store";
-import { darkPalette, lightPalette } from "@/theme/tokens";
-
-const rgb = (c: string) => `rgb(${c.split(" ").join(", ")})`;
+import { rgb, usePalette } from "@/theme/use-palette";
 
 /** docs/07 — 5 dakikalık, seçilen tekniğin gerçek ritmine senkronize nefes egzersizi. */
 export default function BreathingSessionScreen() {
@@ -25,9 +22,7 @@ export default function BreathingSessionScreen() {
   const stressLevel = params.stressLevel ? Number(params.stressLevel) : null;
 
   const record = useRecordSession();
-
-  const preference = useThemeStore((s) => s.preference);
-  const palette = preference === "light" ? lightPalette : darkPalette;
+  const palette = usePalette();
 
   const startedAt = useRef(Date.now());
   const [now, setNow] = useState(() => Date.now());

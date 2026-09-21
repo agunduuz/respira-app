@@ -8,6 +8,7 @@ interface WelcomeState {
   hydrated: boolean;
   hydrate: () => Promise<void>;
   markSeen: () => Promise<void>;
+  reset: () => Promise<void>;
 }
 
 /**
@@ -37,6 +38,15 @@ export const useWelcomeStore = create<WelcomeState>((set) => ({
       await AsyncStorage.setItem(STORAGE_KEY, "true");
     } catch {
       // Yazılamazsa bir sonraki açılışta akış tekrar görünür — zararsız.
+    }
+  },
+
+  reset: async () => {
+    set({ hasSeenWelcome: false });
+    try {
+      await AsyncStorage.removeItem(STORAGE_KEY);
+    } catch {
+      // Silinemezse bayrak bir sonraki açılışta yine okunur — geliştirici aracı, zararsız.
     }
   },
 }));

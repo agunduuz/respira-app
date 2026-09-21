@@ -6,8 +6,8 @@ import { BrandMark } from "@/components/BrandMark";
 import { Button, Card, Screen, Segmented, Text } from "@/components/ui";
 import { translateAuthError } from "@/lib/auth-errors";
 import { supabase } from "@/lib/supabase";
-import { useThemeStore } from "@/theme/theme-store";
-import { darkPalette, lightPalette, touchTarget } from "@/theme/tokens";
+import { touchTarget } from "@/theme/tokens";
+import { rgb, usePalette } from "@/theme/use-palette";
 
 const MODE_OPTIONS = [
   { value: "signin", label: "Giriş Yap" },
@@ -23,9 +23,7 @@ type Mode = "signin" | "signup";
  * yönlendirir — "beni hatırla" davranışı ayrıca kodlanmaz.
  */
 export default function SignInScreen() {
-  const preference = useThemeStore((s) => s.preference);
-  const palette = preference === "light" ? lightPalette : darkPalette;
-  const rgb = (c: string) => `rgb(${c.split(" ").join(", ")})`;
+  const palette = usePalette();
 
   const [mode, setMode] = useState<Mode>("signin");
   const [email, setEmail] = useState("");

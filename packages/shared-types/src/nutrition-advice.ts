@@ -81,7 +81,7 @@ const GENERAL_ADVICE: Record<string, string> = {
 
 function adviceKeyFor(mealLabel: string): string {
   const l = mealLabel.toLocaleLowerCase("tr-TR");
-  if (l.includes("kahvalt")) return "breakfast";
+  if (l.includes("kahvalt") || l.includes("sabah")) return "breakfast";
   if (l.includes("öğle")) return "lunch";
   if (l.includes("akşam")) return "dinner";
   return "default";

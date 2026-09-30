@@ -3,6 +3,7 @@ export * from "./blood-test";
 export * from "./consent";
 export * from "./daily-report";
 export * from "./eye-strain";
+export * from "./food-table";
 export * from "./notification";
 export * from "./nutrition";
 export * from "./nutrition-advice";

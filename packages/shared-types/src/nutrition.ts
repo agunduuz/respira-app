@@ -146,3 +146,79 @@ export const toggleFavoriteSchema = z.object({ isFavorite: z.boolean() });
 
 export const nutritionPeriodSchema = z.enum(["daily", "weekly", "monthly"]);
 export type NutritionPeriod = z.infer<typeof nutritionPeriodSchema>;
+
+export type FoodItemInput = z.infer<typeof foodItemSchema>;
+
+export interface MealTotals {
+  calories: number | null;
+  proteinG: number | null;
+  carbsG: number | null;
+  fatG: number | null;
+  fiberG: number | null;
+}
+
+/**
+ * Öğündeki kalemlerin toplamı (UX-006). Bir değer hiçbir kalemde girilmemişse
+ * 0 değil null döner: "bilinmiyor" ile "sıfır" karışmasın. Bir kalemde boş
+ * olması ise toplamı bozmaz, o kalem o değere 0 katkı yapar.
+ */
+export function sumFoodItems(items: readonly FoodItemInput[]): MealTotals {
+  const add = (pick: (i: FoodItemInput) => number | null | undefined): number | null => {
+    let sum = 0;
+    let any = false;
+    for (const item of items) {
+      const v = pick(item);
+      if (v != null) {
+        sum += v;
+        any = true;
+      }
+    }
+    return any ? Math.round(sum * 10) / 10 : null;
+  };
+  const calories = add((i) => i.calories);
+  return {
+    calories: calories === null ? null : Math.round(calories),
+    proteinG: add((i) => i.protein),
+    carbsG: add((i) => i.carbs),
+    fatG: add((i) => i.fat),
+    fiberG: add((i) => i.fiber),
+  };
+}
+
+const MEAL_LABELS_BY_COUNT: Record<number, readonly string[]> = {
+  1: ["Ana öğün"],
+  2: ["Sabah", "Akşam"],
+  3: ["Sabah", "Öğlen", "Akşam"],
+  4: ["Sabah", "Öğlen", "Ara öğün", "Akşam"],
+  5: ["Sabah", "Ara öğün 1", "Öğlen", "Ara öğün 2", "Akşam"],
+  6: ["Sabah", "Ara öğün 1", "Öğlen", "Ara öğün 2", "Akşam", "Gece"],
+  7: ["Sabah", "Ara öğün 1", "Öğlen", "Ara öğün 2", "Akşam", "Ara öğün 3", "Gece"],
+  8: ["Sabah", "Ara öğün 1", "Öğlen", "Ara öğün 2", "Ara öğün 3", "Akşam", "Ara öğün 4", "Gece"],
+};
+
+/**
+ * Günlük öğün sayısına göre seçilebilir öğün adları (UX-007), gün içindeki
+ * sırayla. Adlar birbirinden farklı: ara öğün birden çoksa numaralanıyor,
+ * böylece her ad seçim listesinde tek bir değer olarak durabiliyor.
+ */
+export function defaultMealLabels(mealsPerDay: number): string[] {
+  const n = Math.min(8, Math.max(1, Math.round(mealsPerDay)));
+  return [...MEAL_LABELS_BY_COUNT[n]];
+}
+
+/** Eski kayıtlardaki "Kahvaltı"/"Öğle" adları yeni "Sabah"/"Öğlen" ile aynı öğün sayılır. */
+function canonicalMealLabel(label: string): string {
+  const l = label.trim().toLocaleLowerCase("tr-TR");
+  if (l === "kahvaltı") return "sabah";
+  if (l === "öğle") return "öğlen";
+  return l;
+}
+
+/**
+ * Bugün henüz eklenmemiş ilk varsayılan öğün. Yalnızca ÖNSEÇİM için: kullanıcı
+ * ekranda istediği öğünü seçebilir. Hepsi eklenmişse "Ara öğün" döner.
+ */
+export function suggestMealLabel(mealsPerDay: number, loggedLabels: readonly string[]): string {
+  const logged = new Set(loggedLabels.map(canonicalMealLabel));
+  return defaultMealLabels(mealsPerDay).find((l) => !logged.has(canonicalMealLabel(l))) ?? "Ara öğün";
+}

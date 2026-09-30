@@ -73,7 +73,7 @@ export default function EyeAnalysisScreen() {
           </Card>
         ) : isError ? (
           <View
-            className="flex-row items-start gap-3 rounded-md border border-danger bg-danger/12 p-4"
+            className="flex-row items-start gap-3 p-4 border rounded-md border-danger bg-danger/12"
             accessibilityRole="alert"
           >
             <CircleAlert size={18} strokeWidth={1.75} color={rgb(palette.danger)} />

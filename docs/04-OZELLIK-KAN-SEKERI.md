@@ -83,6 +83,30 @@ Kullanıcı her öğünü iki şekilde girebilir:
 1. **Basit mod:** Sadece serbest metin (ör. "Yumurta"). Bu durumda besin değeri hesaplaması/takibi **yapılmaz** — sadece bir günlük not olarak kaydedilir.
 2. **Detaylı mod:** Gramaj veya adet girilir (ör. "2 adet yumurta" / "150 gr tavuk göğsü"). Bu durumda mümkünse kalori, yağ, protein, karbonhidrat ve lif değerleri hesaplanıp gösterilir.
 
+### Besin Değerlerinin Otomatik Hesaplanması (IDEA-008)
+
+Detaylı modda kullanıcı besin adını yazarken uygulama içindeki statik tablodan öneri sunulur; bir öneri seçilince kalori/protein/karbonhidrat/yağ/lif **miktardan otomatik hesaplanır**.
+
+**Neden hazır bir API değil?** Foto veya serbest metin üzerinden "ne yedin?" tahmini yapan ticari servisler gerçek dünyada besini yalnızca %68-86 doğru tanıyor; karışık ev yemeklerinde kalori sapması %15-30'a çıkıyor. Bizim detaylı modumuz besini **ve** miktarı kullanıcıya elle tanımlattırdığı için tahminin en zayıf halkası baştan yok. Geriye kalan iş "100 g başına değeri bul, miktarla çarp" — saf arama + aritmetik. Bu yüzden doğruluk tamamen tablonun doğruluğuna indirgeniyor ve laboratuvar analizli resmi veri kullanmak %90+ iddiasını gerçekten doğrulanabilir kılıyor.
+
+**Uygulama:**
+- Tablo `packages/shared-types/src/food-table-data.ts` içinde, 1074 kayıt (~63 KB). Dışarıya hiç çağrı yapılmaz — çevrimdışı da çalışır.
+- Kaynaklar: TürKomp (Ulusal Gıda Kompozisyon Veritabanı, laboratuvar analizli) + besin başına doğrulanmış Türk yemekleri tablosu. Atıflar `FOOD_TABLE_SOURCES` üzerinden "Hakkında" ekranında gösterilir.
+- Arama Türkçe karakterden bağımsızdır ("yogurt" → "Yoğurt") ve kelime sınırına saygı duyar ("zeytin" araması "Zeytinyağı"nı öne almaz).
+- Veri yenilemek için: `python3 packages/shared-types/scripts/gen-food-table.py` (kaynak JSON'ları indirir, `food-table-data.ts`'i yeniden üretir). Üretilen dosya elle düzenlenmez.
+
+**Birim çevrimi ve doğruluk sınırı:** Kaynak derlemede porsiyon ölçüleri gıda **grubu** başına atanmış (zeytinyağı zeytinin "5 tane (20 g)" ölçüsünü, piliç göğsü "1 but (90 g)" ölçüsünü almış). Adet ağırlığı besine özgü bir değer olduğu için bu grup varsayılanları kullanılmıyor: `gramsPerPiece` yalnızca besin başına doğrulanmış kayıtlarda tanımlı. Yoğunluk (`gramsPerMl`) grup varsayılanından zarar görmüyor, çünkü ml ölçüsü olan her şey zaten sıvı. Çevrim verisi yoksa değer **uydurulmaz**; arayüz kullanıcıdan gram ister.
+
+**Kullanıcı her zaman son sözü söyler:** Hesaplanan değerler alanlara yazılmaz, yalnızca gösterilir. Kullanıcı bir alana dokunduğu an o alan onun girdisine geçer ve "Hesaplanan değerlere dön" bağlantısı görünür. Tablodan besin seçilmemişse akış eskisi gibi tamamen elle kalır.
+
+### Bir Öğünde Birden Fazla Besin (UX-006)
+
+Detaylı modda form her seferinde tek besin alır. "Listeye ekle" ile besin öğün listesine geçer (ad, miktar, kcal), form boşalır ve bir sonraki besine hazır olur. Listedeki kalem "Düzenle" ile forma geri yüklenir (seçili besin ve elle değiştirilmiş değerler korunur) ya da "Kaldır" ile silinir. "Kaydet" tüm kalemleri **tek** öğün kaydı olarak gönderir; formda dolu bir besin varsa o da öğüne dahil edilir. Öğün toplamları (`sumFoodItems`) istemcide kalemlerden hesaplanır; hiçbir kalemde girilmemiş değer 0 değil `null` kalır. Şema/API değişmedi (`foodItemsDetail` zaten dizi, en fazla 50). Basit modda "Ne yedin?" alanı virgülle çoklu öğe yazılabileceğini söyleyen bir ipucu gösterir.
+
+### Öğün Adı Seçimi (UX-007)
+
+Öğün ekranında öğün adı serbest metin yerine seçimle belirlenir. Seçenekler profildeki günlük öğün sayısından gelir (`defaultMealLabels`): 3 öğün → Sabah, Öğlen, Akşam; 4 öğün → Sabah, Öğlen, Ara öğün, Akşam; 5+ öğünde ara öğünler numaralanır (Ara öğün 1, 2…) ve Gece eklenir. **Diğer** seçeneği kullanıcının kendi öğün adını yazmasını sağlar. Otomatik tahmin (`suggestMealLabel`: bugün eklenmemiş ilk öğün) yalnızca önseçimdir; kullanıcı istediği öğünü seçebilir. Eski "Kahvaltı"/"Öğle" kayıtları "Sabah"/"Öğlen" ile aynı öğün sayılır. Özel adlar şimdilik kalıcı saklanmaz.
+
 İki modda da, girilen öğünden sonra **öğle yemeği önerisi** sunulur (bkz. aşağı). Öneri her zaman şu ifadeyle birlikte gösterilir:
 
 > *"Bu bir öneridir. Doğru ve kişiselleştirilmiş beslenme kararları için bir diyetisyene danışmanı tavsiye ederiz."*
@@ -203,6 +227,10 @@ model DailyNutritionSummary {
 - [ ] 4 adımlı anket sırayla tamamlanabiliyor, her adımdan geri dönülebiliyor.
 - [ ] Adım 2'deki makro hesaplaması Adım 1 verileriyle doğru şekilde otomatik dolduruluyor ve kullanıcı değiştirebiliyor.
 - [ ] Basit ve detaylı mod arasında geçiş net, kullanıcıya hangi modda takip yapılıp yapılmadığı açıkça gösteriliyor.
+- [ ] Detaylı modda tablodan besin seçilince makrolar miktardan otomatik hesaplanıyor, hesabın hangi gramaja dayandığı gösteriliyor ve kullanıcı her alanı elle değiştirebiliyor.
+- [ ] Birim çevrimi bilinmiyorsa değer uydurulmuyor; kullanıcıdan gram isteniyor.
+- [ ] Detaylı modda birden fazla besin listeye eklenip tek öğün olarak kaydedilebiliyor; toplamlar kalemlerden hesaplanıyor.
+- [ ] Öğün adı, günlük öğün sayısına göre sunulan seçeneklerden seçiliyor; kullanıcı kendi adını da ekleyebiliyor.
 - [ ] Öğle önerisi her zaman diyetisyen uyarısıyla birlikte gösteriliyor.
 - [ ] Ertesi gün referans mantığı sadece detaylı mod verisiyle çalışıyor, basit moddan yanlış sayısal çıkarım yapmıyor.
 - [ ] Haftalık/aylık raporlar öğün içeriği değil, değer karşılaştırması gösteriyor.

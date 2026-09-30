@@ -1,3 +1,4 @@
+import { suggestMealLabel } from "@respira/shared-types";
 import { Link, router } from "expo-router";
 import { BarChart3, ChevronRight, Flame, Lightbulb, ListChecks, PieChart, Star, UtensilsCrossed } from "lucide-react-native";
 import { ActivityIndicator, Pressable, ScrollView, View } from "react-native";
@@ -15,12 +16,6 @@ import { touchTarget } from "@/theme/tokens";
 import { rgb, usePalette } from "@/theme/use-palette";
 const todayKey = () => new Date().toISOString().slice(0, 10);
 
-/** Bir sonraki öğünün etiketini kayıt sayısına göre tahmin eder. */
-function nextMealLabel(count: number, mealsPerDay: number): string {
-  const labels = ["Kahvaltı", "Öğle", "Akşam", "Ara öğün", "Ara öğün", "Ara öğün"];
-  return labels[Math.min(count, Math.min(mealsPerDay, labels.length) - 1)] ?? "Sonraki öğün";
-}
-
 export default function NutritionScreen() {
   const palette = usePalette();
 
@@ -29,7 +24,11 @@ export default function NutritionScreen() {
   const { data: day, isPending: dayPending } = useDayMeals(date);
   const profile = profileData?.profile ?? null;
 
-  const label = nextMealLabel(day?.meals.length ?? 0, profile?.mealsPerDay ?? 3);
+  // Yalnızca önseçim: öğün ekranında kullanıcı istediği öğünü seçebilir (UX-007).
+  const label = suggestMealLabel(
+    profile?.mealsPerDay ?? 3,
+    (day?.meals ?? []).map((m) => m.mealLabel)
+  );
   const { data: advice } = useMealSuggestion(date, label, !!profile);
 
   if (profilePending) {

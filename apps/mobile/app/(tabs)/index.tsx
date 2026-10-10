@@ -123,7 +123,7 @@ export default function HomeScreen() {
       {/* Günlük halkalar */}
       <View className="flex-row items-center gap-[10px] rounded-blockLg bg-t300 py-[22px] pl-[22px] pr-5">
         <View className="flex-1 gap-[10px]">
-          <Text variant="displayLg" className="text-[32px] leading-[32px]">
+          <Text variant="displayLg" className="text-[32px] leading-[40px]">
             {"Günlük\nhalkalar"}
           </Text>
           <Text variant="bodySm" className="font-bodyMedium text-t900">
@@ -196,7 +196,7 @@ export default function HomeScreen() {
           <Text variant="title" className="mt-[6px]">
             Göz molası
           </Text>
-          <Text variant="numHero" className="text-[44px] leading-[44px]">
+          <Text variant="numHero" className="text-[44px] leading-[55px]">
             {eyeLine.big}
           </Text>
           <Text variant="bodySm" className="font-bodyMedium">
@@ -206,7 +206,7 @@ export default function HomeScreen() {
             <View className="h-[34px] w-[34px] items-center justify-center rounded-full bg-t900">
               <Icon name="visibility" size={18} className="text-white" />
             </View>
-            <Text variant="label" className="text-[13px] leading-[16px]">
+            <Text variant="label" className="text-[13px] leading-[17px]">
               {eyeDone} tamam{"\n"}
               {eyeSkipped} atlandı
             </Text>
@@ -238,7 +238,7 @@ export default function HomeScreen() {
                 />
               </View>
               <View pointerEvents="none" className="gap-[6px]">
-                <Text variant="displayLg" className="mt-[6px] text-[28px] leading-[28px]">
+                <Text variant="displayLg" className="mt-[6px] text-[28px] leading-[35px]">
                   {fmt(waterMl)} ml
                 </Text>
                 <Text variant="bodySm" className="font-bodyMedium">
@@ -257,7 +257,7 @@ export default function HomeScreen() {
             <View className="self-start rounded-[12px] bg-white/55 px-[11px] py-[5px]">
               <Text variant="caption">Stres</Text>
             </View>
-            <Text variant="displayLg" className="mt-[6px] text-[26px] leading-[26px]">
+            <Text variant="displayLg" className="mt-[6px] text-[26px] leading-[33px]">
               Nefes
             </Text>
             <Text variant="bodySm" className="font-bodyMedium">
@@ -279,7 +279,7 @@ export default function HomeScreen() {
             Beslenme
           </Text>
           {nutrition ? (
-            <Text variant="displayLg" className="text-[28px] leading-[28px] text-white">
+            <Text variant="displayLg" className="text-[28px] leading-[35px] text-white">
               {fmt(kcal)}{" "}
               <Text variant="bodySm" className="text-[15px] text-mut-l">
                 / {fmt(kcalTarget)} kcal

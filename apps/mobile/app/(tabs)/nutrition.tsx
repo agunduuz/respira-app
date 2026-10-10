@@ -113,7 +113,7 @@ export default function NutritionScreen() {
               </Text>
               <View className="flex-row items-center gap-[5px]">
                 <View className={cn("h-[9px] w-[9px] rounded-full", m.dot)} />
-                <Text variant="displayLg" className="text-[22px] leading-[26px]">
+                <Text variant="displayLg" className="text-[22px] leading-[28px]">
                   {fmt(m.v)}
                 </Text>
               </View>
@@ -258,7 +258,7 @@ function MealBlock({ label, meals, tone, date }: { label: string; meals: MealRow
       className={cn("min-h-[104px] w-[48.4%] gap-[6px] rounded-tile p-[14px]", tone)}
     >
       <Text variant="label">{label}</Text>
-      <Text variant="displayLg" className="text-[24px] leading-[24px]">
+      <Text variant="displayLg" className="text-[24px] leading-[30px]">
         {fmt(kcal)}
       </Text>
       <Text variant="caption" className="font-bodyMedium" numberOfLines={2}>

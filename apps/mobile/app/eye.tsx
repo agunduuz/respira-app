@@ -108,7 +108,7 @@ export default function EyeScreen() {
               />
               {breaking ? (
                 <>
-                  <Text variant="numHero" className="text-[80px] leading-[80px] tracking-tighter">
+                  <Text variant="numHero" className="text-[80px] leading-[100px] tracking-tighter">
                     {view.remainingSeconds}
                   </Text>
                   <Text variant="label" className="text-[15px] font-heavy">
@@ -117,7 +117,7 @@ export default function EyeScreen() {
                 </>
               ) : working ? (
                 <>
-                  <Text variant="numHero" className="text-[58px] leading-[60px] tracking-tighter">
+                  <Text variant="numHero" className="text-[58px] leading-[73px] tracking-tighter">
                     {formatRemaining(view.remainingSeconds)}
                   </Text>
                   <Text variant="label" className="text-[15px] font-heavy">
@@ -126,7 +126,7 @@ export default function EyeScreen() {
                 </>
               ) : (
                 <>
-                  <Text variant="numHero" className="text-[48px] leading-[52px]">
+                  <Text variant="numHero" className="text-[48px] leading-[60px]">
                     Hazır
                   </Text>
                   <Text variant="label" className="text-[15px] font-heavy">

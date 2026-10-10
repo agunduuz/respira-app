@@ -111,7 +111,7 @@ export default function WaterScreen() {
               <View className="self-start rounded-[12px] bg-t100 px-[11px] py-[5px]">
                 <Text variant="caption">%{Math.round(Math.min(1, ratio) * 100)}</Text>
               </View>
-              <Text variant="numHero" className="mt-[6px] text-[50px] leading-[50px]">
+              <Text variant="numHero" className="mt-[6px] text-[50px] leading-[63px]">
                 {fmt(totalMl)}
               </Text>
               <Text variant="subhead" muted>
@@ -149,7 +149,7 @@ export default function WaterScreen() {
               className={cn("w-[48.5%] gap-[14px] rounded-card p-4 active:scale-[0.96]", i % 2 === 0 ? "bg-t100" : "bg-t200")}
             >
               <Icon name={q.ml >= 1000 ? "water_bottle_large" : q.ml >= 500 ? "water_bottle" : "local_drink"} size={28} className="text-t900" />
-              <Text variant="displayLg" className="text-[20px] leading-[22px]">
+              <Text variant="displayLg" className="text-[20px] leading-[25px]">
                 +{q.ml >= 1000 ? `${q.ml / 1000} L` : `${q.ml} ml`}
                 {"\n"}
                 <Text variant="caption" className="text-[13px] font-bodyMedium">

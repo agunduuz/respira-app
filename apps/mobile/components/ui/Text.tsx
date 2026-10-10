@@ -38,6 +38,19 @@ const variantClass: Record<TextVariant, string> = {
   data: "font-data text-data",
 };
 
+/**
+ * Urbanist 800–900 glyph'leri iOS'ta satır kutusunun üstüne taşıp kırpılıyor;
+ * büyük varyantlara üstte garanti boşluk bırakılır.
+ */
+const topPad: Partial<Record<TextVariant, number>> = {
+  numHero: 8,
+  displayXl: 6,
+  displayLg: 5,
+  headline: 4,
+  section: 3,
+  title: 3,
+};
+
 export interface TextProps extends RNTextProps {
   variant?: TextVariant;
   /** İkincil metin rengi (`mut`). */
@@ -49,7 +62,11 @@ export function Text({ variant = "body", muted = false, className, style, ...res
   return (
     <RNText
       className={cn(variantClass[variant], muted ? "text-text-muted" : "text-text", className)}
-      style={variant === "data" || variant === "numHero" ? [{ fontVariant: ["tabular-nums"] }, style] : style}
+      style={[
+        topPad[variant] ? { paddingTop: topPad[variant] } : null,
+        variant === "data" || variant === "numHero" ? { fontVariant: ["tabular-nums"] } : null,
+        style,
+      ]}
       {...rest}
     />
   );

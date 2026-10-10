@@ -72,7 +72,7 @@ export default function BreathingSessionScreen() {
         </View>
 
         <BreathingOrb phases={def.phases} running={!finished}>
-          <Text variant="displayLg" className="text-[40px] leading-[40px]">
+          <Text variant="displayLg" className="text-[40px] leading-[50px]">
             {cycle.remainingInPhase}
           </Text>
           <Text variant="label" className="text-[15px] font-heavy">

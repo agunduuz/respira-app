@@ -130,7 +130,7 @@ export default function StressScreen() {
           />
 
           <View className="gap-[6px]">
-            <Text variant="displayLg" className="text-[36px] leading-[36px]">
+            <Text variant="displayLg" className="text-[36px] leading-[45px]">
               Nefesine dön
             </Text>
             <Text variant="body" className="font-bodyMedium">
@@ -226,7 +226,7 @@ export default function StressScreen() {
                 return (
                   <View key={sug.id} className={cn("flex-1 gap-[6px] rounded-tile px-3 py-[14px]", style.tone)}>
                     <Icon name={style.icon} size={24} className="text-t900" />
-                    <Text variant="subhead" className="text-[14px] leading-[16px]">
+                    <Text variant="subhead" className="text-[14px] leading-[18px]">
                       {sug.title}
                     </Text>
                   </View>

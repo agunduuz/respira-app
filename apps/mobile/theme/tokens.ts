@@ -80,14 +80,14 @@ export const fontFamily = {
  */
 export const typeScale = {
   /** Sayaç / dev rakam (göz 80, su 50, saat 44) */
-  numHero: { fontSize: 54, lineHeight: 54 },
-  displayXl: { fontSize: 48, lineHeight: 50 },
-  displayLg: { fontSize: 34, lineHeight: 38 },
+  numHero: { fontSize: 54, lineHeight: 68 },
+  displayXl: { fontSize: 48, lineHeight: 60 },
+  displayLg: { fontSize: 34, lineHeight: 44 },
   /** Ekran başlığı (Lavanta Blok: 30–36) */
-  headline: { fontSize: 30, lineHeight: 32 },
-  title: { fontSize: 22, lineHeight: 26 },
+  headline: { fontSize: 30, lineHeight: 38 },
+  title: { fontSize: 22, lineHeight: 28 },
   /** Bölüm başlığı (24) */
-  section: { fontSize: 24, lineHeight: 28 },
+  section: { fontSize: 24, lineHeight: 30 },
   body: { fontSize: 16, lineHeight: 24 },
   bodySm: { fontSize: 14, lineHeight: 20 },
   subhead: { fontSize: 15, lineHeight: 20 },

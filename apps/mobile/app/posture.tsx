@@ -137,7 +137,7 @@ export default function PostureScreen() {
             trackColor="rgba(30,24,48,.14)"
             rings={[{ r: 106, value: progress, color: "#140F24" }]}
           >
-            <Text variant="numHero" className="text-[64px] leading-[66px]">
+            <Text variant="numHero" className="text-[64px] leading-[80px]">
               {formatRemaining(remaining)}
             </Text>
           </Rings>
@@ -220,7 +220,7 @@ export default function PostureScreen() {
                       <Icon name="play_arrow" size={18} className="text-white" />
                     </View>
                   </View>
-                  <Text variant="title" className="mt-auto text-[17px] leading-[19px]">
+                  <Text variant="title" className="mt-auto text-[17px] leading-[22px]">
                     {e.name}
                   </Text>
                   <Text variant="caption" className="font-bodySemiBold" numberOfLines={3}>

@@ -1,233 +1,190 @@
-import { Link } from "expo-router";
-import { BarChart3, ChevronRight, Clock, Play, Square } from "lucide-react-native";
+import { router } from "expo-router";
 import { useEffect, useState } from "react";
 import { Pressable, ScrollView, View } from "react-native";
-import Animated, { useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated";
+import Animated, {
+  Easing,
+  cancelAnimation,
+  useAnimatedStyle,
+  useSharedValue,
+  withRepeat,
+  withSequence,
+  withTiming,
+} from "react-native-reanimated";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { EyeCompliance } from "@/components/EyeCompliance";
 import { InfoTip } from "@/components/InfoTip";
-import { ProgressRing } from "@/components/ProgressRing";
-import { Button, Card, Screen, Text } from "@/components/ui";
-import { useEyeStrainAnalytics } from "@/lib/eye-strain-queries";
+import { Rings } from "@/components/Rings";
+import { Button, Icon, IconButton, Screen, Text } from "@/components/ui";
 import { formatRemaining } from "@/lib/eye-strain-timer";
 import { EYE_TIPS, tipOfTheDay } from "@/lib/tips";
 import { useEyeTimerActions, useEyeTimerView } from "@/lib/use-eye-timer";
 import { useMotion } from "@/theme/use-motion";
-import { rgb, usePalette } from "@/theme/use-palette";
 
+/**
+ * Göz molası (Lavanta Blok): t200 başlık bloğunda büyük halka + sayaç, altında
+ * Uyum kartı. Sayaç üç evreli: hazır → çalışıyor (sonraki molaya) → mola
+ * (20 saniye, halka nefes alır). Bildirim izni uyarısı ve günün notu altta.
+ */
 export default function EyeScreen() {
-  const palette = usePalette();
-
-  const { data: analytics } = useEyeStrainAnalytics("daily");
+  const insets = useSafeAreaInsets();
   const { view, durations } = useEyeTimerView();
   const { start, stop, finishBreak } = useEyeTimerActions();
   const [permission, setPermission] = useState<boolean | null>(null);
+  const { reduced } = useMotion();
 
-  // Sayaç ilk göründüğünde hafif bir fade+scale — reduced motion'da anında biter.
-  const { duration: motionDuration } = useMotion();
-  const enter = useSharedValue(0);
+  const breaking = view.phase === "breaking";
+  const working = view.phase === "working";
+
+  // Mola sırasında halkanın içindeki hale nefes gibi büyüyüp küçülür (tasarımdaki eyeHalo).
+  const halo = useSharedValue(1);
   useEffect(() => {
-    enter.value = withTiming(1, { duration: motionDuration.standard });
-    // Sadece mount'ta çalışsın.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-  const enterStyle = useAnimatedStyle(() => ({
-    opacity: enter.value,
-    transform: [{ scale: 0.96 + enter.value * 0.04 }],
-  }));
+    if (breaking && !reduced) {
+      halo.value = withRepeat(
+        withSequence(
+          withTiming(1.08, { duration: 2500, easing: Easing.inOut(Easing.ease) }),
+          withTiming(0.92, { duration: 2500, easing: Easing.inOut(Easing.ease) })
+        ),
+        -1
+      );
+    } else {
+      cancelAnimation(halo);
+      halo.value = withTiming(1, { duration: 400 });
+    }
+    return () => cancelAnimation(halo);
+  }, [breaking, reduced, halo]);
+  const haloStyle = useAnimatedStyle(() => ({ transform: [{ scale: halo.value }] }));
 
   async function startTimer() {
     setPermission(await start());
   }
 
-  // --- MOLA EKRANI ---
-  if (view.phase === "breaking") {
-    return (
-      <Screen className="items-center justify-center gap-8 p-6">
-        <View className="items-center gap-2">
-          <Text variant="label" muted>
-            MOLA
-          </Text>
-          <Text variant="title" className="text-center">
-            6 metre uzağa bak
-          </Text>
-        </View>
+  const message = breaking
+    ? "Pencereden dışarı, 6 metre uzağa bak. Göz kırpmayı unutma."
+    : working
+      ? "Sayaç çalışıyor. Süre dolunca 20 saniyelik bir mola vereceğiz."
+      : `${durations.intervalMinutes} dakikada bir ${durations.breakSeconds} saniye uzağa bak. Hazırsan başlat.`;
 
-        <ProgressRing
-          progress={view.progress}
-          color={rgb(palette.accent)}
-          trackColor={rgb(palette.border)}
-        >
-          <Text variant="displayXl">{formatRemaining(view.remainingSeconds)}</Text>
-        </ProgressRing>
-
-        <View className="w-full gap-2">
-          <Button title="Tamamladım" onPress={() => finishBreak("COMPLETED")} />
-          <Button title="Atla" variant="ghost" onPress={() => finishBreak("SKIPPED")} />
-        </View>
-      </Screen>
-    );
-  }
-
-  const completedToday = analytics?.totals.completed ?? null;
-  const triggeredToday = analytics?.totals.triggered ?? null;
-
-  // --- SAYAÇ EKRANI ---
   return (
-    <Screen edges={["bottom"]}>
-      <ScrollView contentContainerClassName="gap-6 p-5 pb-12">
-        <Animated.View style={enterStyle} className="flex-row items-start justify-between">
-          <View className="gap-1">
-            <Text variant="label" muted>
-              GÖZ MOLASI
-            </Text>
-            <Text variant="displayLg">20-20-20</Text>
-          </View>
-          <StatusPill running={view.phase === "working"} accent={rgb(palette.accent)} muted={rgb(palette.textMuted)} />
-        </Animated.View>
-
-        <Animated.View style={enterStyle} className="items-center gap-3 py-4">
-          <ProgressRing
-            progress={view.progress}
-            color={rgb(palette.accent)}
-            trackColor={rgb(palette.border)}
-          >
-            {view.phase === "working" ? (
-              <>
-                <Text variant="displayXl">{formatRemaining(view.remainingSeconds)}</Text>
-                <Text variant="label" muted>
-                  SONRAKİ MOLAYA
-                </Text>
-              </>
-            ) : (
-              <Text variant="title" muted>
-                Hazır
+    <Screen edges={[]}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerClassName="gap-[18px] pb-10">
+        <View className="gap-[14px] rounded-b-sheet bg-t200 px-[22px] pb-6" style={{ paddingTop: insets.top + 8 }}>
+          <View className="flex-row items-center justify-between">
+            <IconButton icon="arrow_back" label="Geri" variant="light" onPress={() => router.back()} />
+            <View className="rounded-[14px] bg-white/55 px-[14px] py-[7px]">
+              <Text variant="label">
+                {durations.intervalMinutes} dk · {durations.breakSeconds} sn · 6 m
               </Text>
-            )}
-          </ProgressRing>
-
-          {triggeredToday !== null && triggeredToday > 0 ? (
-            <Text variant="data" muted>
-              Bugün {completedToday}/{triggeredToday} mola tamamlandı
-            </Text>
-          ) : null}
-        </Animated.View>
-
-        {view.phase === "working" ? (
-          <Button
-            title="Sayacı durdur"
-            variant="secondary"
-            icon={Square}
-            iconColor={rgb(palette.text)}
-            onPress={() => void stop()}
-          />
-        ) : (
-          <Button title="Sayacı başlat" icon={Play} iconColor={rgb(palette.onAccent)} onPress={() => void startTimer()} />
-        )}
-
-        {permission === false ? (
-          <Card className="gap-1 border-warm">
-            <Text variant="label" className="text-warm">
-              BİLDİRİM İZNİ YOK
-            </Text>
-            <Text variant="bodySm" muted>
-              Sayaç çalışmaya devam eder, ancak uygulama kapalıyken hatırlatma
-              gönderilemez. İzni cihaz ayarlarından açabilirsin.
-            </Text>
-          </Card>
-        ) : null}
-
-        <View className="gap-2">
-          <View className="flex-row items-baseline justify-between px-1">
-            <Text variant="title">Ayarlar</Text>
-            <Text variant="data" muted>
-              {durations.intervalMinutes} dk · {durations.breakSeconds} sn
-            </Text>
-          </View>
-          <Card className="gap-0 p-0">
-            <SettingsRow
-              href="/eye-strain-settings"
-              icon={Clock}
+            </View>
+            <IconButton
+              icon="tune"
+              iconSize={22}
               label="Süreleri değiştir"
-              accent={rgb(palette.accent)}
-              muted={rgb(palette.textMuted)}
+              variant="light"
+              onPress={() => router.push("/eye-strain-settings")}
             />
-            <View className="h-px bg-border" />
-            <SettingsRow
-              href="/eye-analysis"
-              icon={BarChart3}
-              label="Uyum analizi"
-              accent={rgb(palette.accent)}
-              muted={rgb(palette.textMuted)}
-            />
-          </Card>
+          </View>
+
+          <Text variant="headline" className="mt-2">
+            Göz molası
+          </Text>
+          <Text variant="body" className="min-h-[40px] font-bodyMedium leading-[20px]">
+            {message}
+          </Text>
+
+          <View className="self-center">
+            <Rings
+              size={240}
+              strokeWidth={16}
+              trackColor="rgba(30,24,48,.12)"
+              rings={[{ r: 106, value: view.phase === "idle" ? 0 : view.progress, color: "#140F24" }]}
+            >
+              <Animated.View
+                pointerEvents="none"
+                style={[
+                  { position: "absolute", top: 34, left: 34, right: 34, bottom: 34, borderRadius: 999, backgroundColor: "rgba(255,255,255,.5)" },
+                  haloStyle,
+                ]}
+              />
+              {breaking ? (
+                <>
+                  <Text variant="numHero" className="text-[80px] leading-[80px] tracking-tighter">
+                    {view.remainingSeconds}
+                  </Text>
+                  <Text variant="label" className="text-[15px] font-heavy">
+                    saniye
+                  </Text>
+                </>
+              ) : working ? (
+                <>
+                  <Text variant="numHero" className="text-[58px] leading-[60px] tracking-tighter">
+                    {formatRemaining(view.remainingSeconds)}
+                  </Text>
+                  <Text variant="label" className="text-[15px] font-heavy">
+                    sonraki molaya
+                  </Text>
+                </>
+              ) : (
+                <>
+                  <Text variant="numHero" className="text-[48px] leading-[52px]">
+                    Hazır
+                  </Text>
+                  <Text variant="label" className="text-[15px] font-heavy">
+                    sayaç duruyor
+                  </Text>
+                </>
+              )}
+            </Rings>
+          </View>
+
+          <View className="mt-1 flex-row gap-[10px]">
+            {breaking ? (
+              <>
+                <Button title="Tamamladım" className="flex-1" onPress={() => finishBreak("COMPLETED")} />
+                <Button title="Atla" variant="secondary" className="w-[100px]" onPress={() => finishBreak("SKIPPED")} />
+              </>
+            ) : working ? (
+              <Button title="Sayacı durdur" variant="secondary" className="flex-1" onPress={() => void stop()} />
+            ) : (
+              <Button title="Sayacı başlat" className="flex-1" onPress={() => void startTimer()} />
+            )}
+          </View>
         </View>
 
-        <InfoTip text={tipOfTheDay(EYE_TIPS)} />
+        <View className="gap-[18px] px-[18px]">
+          {permission === false ? (
+            <View className="gap-1 rounded-card border-[1.5px] border-t500 bg-white p-4" accessibilityRole="alert">
+              <Text variant="label" className="text-t600">
+                Bildirim izni yok
+              </Text>
+              <Text variant="bodySm" muted>
+                Sayaç çalışmaya devam eder, ancak uygulama kapalıyken hatırlatma gönderilemez. İzni cihaz ayarlarından açabilirsin.
+              </Text>
+            </View>
+          ) : null}
 
-        <Text variant="bodySm" muted>
-          Bu uygulama bir sağlık hizmeti sağlamaz, yalnızca bir hatırlatma aracıdır.
-        </Text>
+          <EyeCompliance />
+
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Uyum analizi"
+            onPress={() => router.push("/eye-analysis")}
+            className="flex-row items-center gap-3 rounded-card bg-t100 px-4 py-[14px]"
+          >
+            <Icon name="monitoring" size={24} />
+            <Text variant="subhead" className="flex-1">
+              Ayrıntılı uyum analizi
+            </Text>
+            <Icon name="chevron_right" size={24} />
+          </Pressable>
+
+          <InfoTip text={tipOfTheDay(EYE_TIPS)} />
+
+          <Text variant="bodySm" muted className="px-1">
+            Bu uygulama bir sağlık hizmeti sağlamaz, yalnızca bir hatırlatma aracıdır.
+          </Text>
+        </View>
       </ScrollView>
     </Screen>
-  );
-}
-
-/** Durumu sadece metinle değil, renkli bir noktayla da taşıyan küçük rozet. */
-function StatusPill({ running, accent, muted }: { running: boolean; accent: string; muted: string }) {
-  return (
-    <View className="flex-row items-center gap-1.5 rounded-full border border-border bg-surface px-3 py-1.5">
-      <View
-        style={{
-          width: 6,
-          height: 6,
-          borderRadius: 3,
-          backgroundColor: running ? accent : muted,
-        }}
-      />
-      <Text variant="label" muted={!running}>
-        {running ? "Çalışıyor" : "Hazır"}
-      </Text>
-    </View>
-  );
-}
-
-/** Ayarlar kartındaki dokunulabilir satır — ikon + etiket + chevron. */
-function SettingsRow({
-  href,
-  icon: Icon,
-  label,
-  accent,
-  muted,
-}: {
-  href: "/eye-strain-settings" | "/eye-analysis";
-  icon: typeof Clock;
-  label: string;
-  accent: string;
-  muted: string;
-}) {
-  return (
-    <Link href={href} asChild>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={label}
-        className="flex-row items-center gap-3 px-5 py-3.5"
-        style={{ minHeight: 48 }}
-      >
-        {({ pressed }) => (
-          <View className="flex-1 flex-row items-center gap-3" style={{ opacity: pressed ? 0.65 : 1 }}>
-            <View
-              className="items-center justify-center rounded-full bg-accent/10"
-              style={{ width: 32, height: 32 }}
-            >
-              <Icon size={16} strokeWidth={1.75} color={accent} />
-            </View>
-            <Text variant="body" className="flex-1">
-              {label}
-            </Text>
-            <ChevronRight size={18} strokeWidth={1.75} color={muted} />
-          </View>
-        )}
-      </Pressable>
-    </Link>
   );
 }

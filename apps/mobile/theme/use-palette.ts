@@ -1,22 +1,22 @@
-import { useFeature } from "./feature-theme";
-import { useIsDark } from "./theme-store";
-import { darkPalette, featureAccents, lightPalette } from "./tokens";
+import { useMemo } from "react";
 
-export type Palette = { [K in keyof typeof darkPalette]: string };
+import { useHueStore } from "./hue-store";
+import { paletteFor, type Palette } from "./tones";
+
+export type { Palette };
 
 /** "11 107 73" → "rgb(11, 107, 73)" — SVG/Skia/navigation gibi className almayan yerler için. */
 export const rgb = (channels: string) => `rgb(${channels.split(" ").join(", ")})`;
 
+/** "11 107 73" + opaklık → "rgba(11, 107, 73, 0.5)" */
+export const rgba = (channels: string, alpha: number) =>
+  `rgba(${channels.split(" ").join(", ")}, ${alpha})`;
+
 /**
- * Etkin temanın paleti. className alamayan yerler (ikon rengi, Skia, tab bar)
- * rengi buradan okur; tema seçimi tek noktada kalır.
+ * Seçili ana renge göre palet. className alamayan yerler (ikon rengi, SVG,
+ * Skia, tab bar) rengi buradan okur; hue değişince hepsi birlikte yenilenir.
  */
 export function usePalette(): Palette {
-  const feature = useFeature();
-  const isLight = !useIsDark();
-  const base = isLight ? lightPalette : darkPalette;
-  const accent = featureAccents[feature][isLight ? "light" : "dark"];
-
-  // Taban renkler her modülde aynı; yalnızca aksan değişiyor (UI-004).
-  return { ...base, accent: accent.accent, onAccent: accent.onAccent };
+  const hue = useHueStore((s) => s.hue);
+  return useMemo(() => paletteFor(hue), [hue]);
 }

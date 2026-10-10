@@ -46,9 +46,9 @@ function Segment({ filled }: { filled: boolean }) {
   const style = useAnimatedStyle(() => ({ width: `${fill.value * 100}%` }));
 
   return (
-    <View className="h-1 flex-1 overflow-hidden rounded-full bg-border">
+    <View className="h-[6px] flex-1 overflow-hidden rounded-full bg-line">
       <Animated.View style={[{ height: "100%" }, style]}>
-        <View className="flex-1 rounded-full bg-accent" />
+        <View className="flex-1 rounded-full bg-t900" />
       </Animated.View>
     </View>
   );

@@ -1,54 +1,38 @@
 import type { BreathingPhase } from "@respira/shared-types";
 import { useEffect } from "react";
 import { View } from "react-native";
-import {
+import Animated, {
   Easing,
-  useDerivedValue,
+  useAnimatedStyle,
   useSharedValue,
   withRepeat,
   withSequence,
   withTiming,
 } from "react-native-reanimated";
 
-import { isSkiaUsable } from "@/lib/skia-available";
 import { useMotion } from "@/theme/use-motion";
 
-// Statik import, Skia'sız platformlarda ekranı düşürüyor — bkz. ProgressRing.
-const skia = isSkiaUsable()
-  ? (require("@shopify/react-native-skia") as typeof import("@shopify/react-native-skia"))
-  : null;
-
-const MIN_R = 62;
-const MAX_R = 108;
-// Dış hale en fazla radius + 18 + 10 = MAX_R + 28'e kadar genişliyor (bkz.
-// haloRadius aşağıda) — tuval bunu tam olarak karşılamazsa hale kenarlardan
-// kırpılıp köşeli/kesik görünüyordu. SIZE bu üst sınırı + biraz pay içerir.
-const HALO_MAX_R = MAX_R + 28;
-const SIZE = HALO_MAX_R * 2 + 16;
-const CENTER = SIZE / 2;
+const SIZE = 300;
+const MIN_SCALE = 0.7;
 
 interface Props {
   /** docs/07 — seçilen tekniğin gerçek faz süreleri (inhale/hold/exhale). */
   phases: readonly BreathingPhase[];
-  /** false iken daire dinlenme boyutunda durur (egzersiz başlamadan önceki önizleme). */
+  /** false iken orb dinlenme boyutunda durur (egzersiz başlamadan önceki önizleme). */
   running: boolean;
-  accent: string;
-  surface: string;
+  children?: React.ReactNode;
 }
 
 /**
- * docs/01 — Animasyon katmanı 2 (Skia imza görseli).
- * docs/07 kabul kriteri: "Nefes animasyonu, seçilen tekniğin gerçek ritmiyle
- * senkronize" — bu yüzden basit inhale/exhale yerine faz dizisinden
- * (inhale/hold/exhale, her biri kendi süresiyle) bir Reanimated dizisi
- * kuruluyor; tutma fazlarında daire mevcut boyutunda sabit kalıyor.
- *
- * Hareket azaltma açıkken daire sabit orta boyda kalır — animasyon yok, ama
- * görsel kaybolmaz (docs/01: "basit fade'e düşmeli").
+ * Lavanta Blok nefes orb'u: üç iç içe daire (yarı saydam beyaz 290/220, dolgu
+ * beyaz 150) nefes al → büyür, nefes ver → küçülür. Tutma fazlarında mevcut
+ * boyutta kalır. docs/07 kabul kriteri: animasyon seçilen tekniğin GERÇEK
+ * ritmiyle senkron — bu yüzden faz dizisinden bir Reanimated dizisi kuruluyor.
+ * Hareket azaltma açıkken orb sabit orta boyda kalır.
  */
-export function BreathingOrb({ phases, running, accent, surface }: Props) {
+export function BreathingOrb({ phases, running, children }: Props) {
   const { reduced } = useMotion();
-  const progress = useSharedValue(reduced ? 0.5 : 0);
+  const progress = useSharedValue(0);
 
   useEffect(() => {
     if (reduced) {
@@ -56,12 +40,11 @@ export function BreathingOrb({ phases, running, accent, surface }: Props) {
       return;
     }
     if (!running) {
-      progress.value = withTiming(0, { duration: 400 });
+      progress.value = withTiming(0, { duration: 800 });
       return;
     }
 
-    // Faz dizisinden bir Reanimated withSequence kuruyoruz: inhale 0→1,
-    // exhale 1→0, hold mevcut seviyede sabit kalır (aynı değere withTiming).
+    // inhale 0→1, exhale 1→0, hold mevcut seviyede sabit (aynı değere withTiming).
     let level = 0;
     const steps = phases.map((phase) => {
       const duration = phase.seconds * 1000;
@@ -79,25 +62,20 @@ export function BreathingOrb({ phases, running, accent, surface }: Props) {
     progress.value = withRepeat(withSequence(...steps), -1, false);
   }, [reduced, running, phases, progress]);
 
-  const radius = useDerivedValue(() => MIN_R + (MAX_R - MIN_R) * progress.value);
-  // Dış hale içteki daireden biraz gecikmeli genişliyor — organik his verir.
-  const haloRadius = useDerivedValue(() => radius.value + 18 + 10 * progress.value);
-  const haloOpacity = useDerivedValue(() => 0.1 + 0.16 * progress.value);
-
-  if (!skia) {
-    return <View style={{ width: SIZE, height: SIZE }} />;
-  }
-
-  const { Canvas, Circle, Group, RadialGradient, vec } = skia;
+  const scale = useAnimatedStyle(() => ({ transform: [{ scale: MIN_SCALE + (1 - MIN_SCALE) * progress.value }] }));
 
   return (
-    <Canvas style={{ width: SIZE, height: SIZE }}>
-      <Group>
-        <Circle cx={CENTER} cy={CENTER} r={haloRadius} color={accent} opacity={haloOpacity} />
-        <Circle cx={CENTER} cy={CENTER} r={radius}>
-          <RadialGradient c={vec(CENTER, CENTER)} r={MAX_R} colors={[accent, surface]} />
-        </Circle>
-      </Group>
-    </Canvas>
+    <View style={{ width: SIZE, height: SIZE, alignItems: "center", justifyContent: "center" }}>
+      <Animated.View
+        style={[{ position: "absolute", width: 290, height: 290, borderRadius: 145, backgroundColor: "rgba(255,255,255,.22)" }, scale]}
+      />
+      <Animated.View
+        style={[{ position: "absolute", width: 220, height: 220, borderRadius: 110, backgroundColor: "rgba(255,255,255,.35)" }, scale]}
+      />
+      <Animated.View
+        style={[{ position: "absolute", width: 150, height: 150, borderRadius: 75, backgroundColor: "#FFFFFF" }, scale]}
+      />
+      {children ? <View style={{ alignItems: "center", gap: 2 }}>{children}</View> : null}
+    </View>
   );
 }

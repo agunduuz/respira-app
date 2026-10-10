@@ -16,10 +16,13 @@ export interface SegmentedProps<T extends string> {
   className?: string;
 }
 
-/** Hap şeklinde sekme seçici — auth ekranındaki Giriş/Kayıt seçiciyle aynı kalıp. */
+/**
+ * Hap seçici (Gün/Hafta/Ay): t50 zemin üstünde seçili olan t900 dolgu + beyaz
+ * metin. Eski çağrılarla aynı API.
+ */
 export function Segmented<T extends string>({ options, value, onChange, className }: SegmentedProps<T>) {
   return (
-    <View className={cn("flex-row rounded-full border border-border bg-surface p-1", className)} accessibilityRole="tablist">
+    <View className={cn("flex-row gap-0.5 rounded-[18px] bg-t50 p-1", className)} accessibilityRole="tablist">
       {options.map((opt) => {
         const active = opt.value === value;
         return (
@@ -29,9 +32,9 @@ export function Segmented<T extends string>({ options, value, onChange, classNam
             accessibilityRole="tab"
             accessibilityState={{ selected: active }}
             style={{ minHeight: touchTarget.min - 8 }}
-            className={cn("flex-1 items-center justify-center rounded-full", active ? "bg-accent" : "bg-transparent")}
+            className={cn("flex-1 items-center justify-center rounded-[14px] px-3", active ? "bg-t900" : "bg-transparent")}
           >
-            <Text variant="label" className={active ? "text-on-accent" : "text-text-muted"}>
+            <Text variant="label" className={active ? "text-white" : "text-mut"}>
               {opt.label}
             </Text>
           </Pressable>

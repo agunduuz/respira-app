@@ -12,7 +12,6 @@ import { Button, Screen, Text } from "@/components/ui";
 import { PHASE_LABELS, breathingStateAt } from "@/lib/breathing-cycle";
 import { formatRemaining } from "@/lib/eye-strain-timer";
 import { useRecordSession } from "@/lib/stress-queries";
-import { rgb, usePalette } from "@/theme/use-palette";
 
 /** docs/07 — 5 dakikalık, seçilen tekniğin gerçek ritmine senkronize nefes egzersizi. */
 export default function BreathingSessionScreen() {
@@ -22,7 +21,6 @@ export default function BreathingSessionScreen() {
   const stressLevel = params.stressLevel ? Number(params.stressLevel) : null;
 
   const record = useRecordSession();
-  const palette = usePalette();
 
   const startedAt = useRef(Date.now());
   const [now, setNow] = useState(() => Date.now());
@@ -60,40 +58,41 @@ export default function BreathingSessionScreen() {
   }
 
   return (
-    <Screen edges={["top"]} className="items-center justify-center gap-6 p-6">
-      <View className="items-center gap-1">
-        <Text variant="label" muted>
-          {def.label.toLocaleUpperCase("tr-TR")}
+    <View className="flex-1 bg-t300">
+      <Screen transparent edges={["top", "bottom"]} className="items-center justify-center gap-5 px-5 py-4">
+        <View className="items-center gap-1">
+          <View className="rounded-[14px] bg-t900 px-[14px] py-[7px]">
+            <Text variant="label" className="text-white">
+              {def.label}
+            </Text>
+          </View>
+          <Text variant="bodySm" className="mt-1 font-bodySemiBold">
+            Kalan: {formatRemaining(sessionRemaining)}
+          </Text>
+        </View>
+
+        <BreathingOrb phases={def.phases} running={!finished}>
+          <Text variant="displayLg" className="text-[40px] leading-[40px]">
+            {cycle.remainingInPhase}
+          </Text>
+          <Text variant="label" className="text-[15px] font-heavy">
+            {PHASE_LABELS[cycle.phase.type]}
+          </Text>
+        </BreathingOrb>
+
+        <Text variant="body" className="text-center font-bodyMedium">
+          {def.instruction}
         </Text>
-        <Text variant="bodySm" muted>
-          Kalan: {formatRemaining(sessionRemaining)}
+
+        <View className="w-full flex-row items-center gap-[10px]">
+          <Button title="Seansı bitir" className="flex-1" onPress={() => finish("COMPLETED")} />
+          <Button title="Atla" variant="secondary" className="w-[100px]" onPress={() => finish("SKIPPED")} />
+        </View>
+
+        <Text variant="caption" className="px-2 text-center font-bodyMedium">
+          {STRESS_LEGAL_NOTICE}
         </Text>
-      </View>
-
-      <BreathingOrb
-        phases={def.phases}
-        running={!finished}
-        accent={rgb(palette.accent)}
-        surface={rgb(palette.surface)}
-      />
-
-      <View className="items-center gap-1">
-        <Text variant="displayLg">{PHASE_LABELS[cycle.phase.type]}</Text>
-        <Text variant="displayXl">{cycle.remainingInPhase}</Text>
-      </View>
-
-      <Text variant="bodySm" className="text-center">
-        {def.instruction}
-      </Text>
-
-      <View className="w-full gap-2">
-        <Button title="Bitir" onPress={() => finish("COMPLETED")} />
-        <Button title="Atla" variant="ghost" onPress={() => finish("SKIPPED")} />
-      </View>
-
-      <Text variant="bodySm" muted className="text-center">
-        {STRESS_LEGAL_NOTICE}
-      </Text>
-    </Screen>
+      </Screen>
+    </View>
   );
 }

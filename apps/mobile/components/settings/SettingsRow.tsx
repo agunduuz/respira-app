@@ -1,8 +1,8 @@
 import { ChevronRight, type LucideIcon } from "lucide-react-native";
 import type { ReactNode } from "react";
-import { Pressable, Switch, View } from "react-native";
+import { Pressable, View } from "react-native";
 
-import { Text } from "@/components/ui";
+import { Text, Toggle } from "@/components/ui";
 import { cn } from "@/theme/cn";
 import { FeatureTint, type Feature } from "@/theme/feature-theme";
 import { touchTarget } from "@/theme/tokens";
@@ -44,7 +44,7 @@ function Inner({ label, icon: Icon, value, onPress, toggle, destructive, right }
     >
       {Icon ? (
         <View
-          className={cn("items-center justify-center rounded-full", destructive ? "bg-danger/10" : "bg-accent/10")}
+          className={cn("items-center justify-center rounded-full", destructive ? "bg-danger/10" : "bg-t100")}
           style={{ width: 32, height: 32 }}
         >
           <Icon size={16} strokeWidth={1.75} color={rgb(destructive ? palette.danger : palette.accent)} />
@@ -59,13 +59,7 @@ function Inner({ label, icon: Icon, value, onPress, toggle, destructive, right }
         </Text>
       ) : null}
       {toggle ? (
-        <Switch
-          value={toggle.value}
-          onValueChange={toggle.onChange}
-          accessibilityLabel={label}
-          trackColor={{ false: rgb(palette.borderStrong), true: rgb(palette.accent) }}
-          ios_backgroundColor={rgb(palette.borderStrong)}
-        />
+        <Toggle value={toggle.value} onChange={toggle.onChange} label={label} />
       ) : null}
       {right}
       {onPress && !toggle ? <ChevronRight size={18} strokeWidth={1.75} color={rgb(palette.textMuted)} /> : null}

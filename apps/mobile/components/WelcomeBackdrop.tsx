@@ -20,9 +20,9 @@ interface Props {
  */
 export function WelcomeBackdrop({ step }: Props) {
   const palette = usePalette();
-  const alpha = useIsDark() ? 0.22 : 0.16;
+  const alpha = useIsDark() ? 0.5 : 0.55;
 
-  const layers = [palette.accent, palette.warm, palette.accent];
+  const layers = [palette.t200, palette.t300, palette.t100];
 
   return (
     <View style={StyleSheet.absoluteFill} pointerEvents="none" className="bg-bg">

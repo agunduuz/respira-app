@@ -1,22 +1,21 @@
 import { router } from "expo-router";
-import { Check, ChevronRight, Droplet, Eye, PersonStanding, Wind, type LucideIcon } from "lucide-react-native";
 import { Pressable, View } from "react-native";
 
-import { Card, Text } from "@/components/ui";
+import { Icon, Text } from "@/components/ui";
 import { useDailyModulesStore } from "@/lib/daily-modules-store";
 import { useEyeStrainAnalytics } from "@/lib/eye-strain-queries";
 import { usePostureProfile, useTodayBreaks } from "@/lib/posture-queries";
 import { useTodaySessions } from "@/lib/stress-queries";
 import { useTodayIntake, useWaterGoal } from "@/lib/water-queries";
 import { cn } from "@/theme/cn";
-import { FeatureTint, type Feature } from "@/theme/feature-theme";
 import { touchTarget } from "@/theme/tokens";
-import { rgb, usePalette } from "@/theme/use-palette";
 
 interface Item {
   id: string;
-  feature: Feature;
-  icon: LucideIcon;
+  /** Material Symbols adı. */
+  icon: string;
+  /** Rozet tonu — modülün bloğuyla aynı. */
+  tone: string;
   title: string;
   status: string;
   done: boolean;
@@ -29,7 +28,6 @@ interface Item {
  * ekrana götürüyor. Kullanıcıyı zorlamak için değil, unutmamak için.
  */
 export function DailyChecklist() {
-  const palette = usePalette();
   const enabled = useDailyModulesStore((s) => s.enabled);
   const { data: analytics } = useEyeStrainAnalytics("daily");
   const { data: goalData } = useWaterGoal();
@@ -50,8 +48,8 @@ export function DailyChecklist() {
   const items: Item[] = [
     {
       id: "eye",
-      feature: "goz",
-      icon: Eye,
+      icon: "visibility",
+      tone: "bg-t200",
       title: "Göz molası ver",
       status: eyeDone ? "Bugün tamamlandı" : "Henüz mola vermedin",
       done: eyeDone,
@@ -59,8 +57,8 @@ export function DailyChecklist() {
     },
     {
       id: "water",
-      feature: "su",
-      icon: Droplet,
+      icon: "water_drop",
+      tone: "bg-t100",
       title: "Su hedefini tamamla",
       status: !goal
         ? "Önce günlük hedefini belirle"
@@ -72,8 +70,8 @@ export function DailyChecklist() {
     },
     {
       id: "posture",
-      feature: "durus",
-      icon: PersonStanding,
+      icon: "accessibility_new",
+      tone: "bg-t400",
       title: "Duruş molası ver",
       status: !hasPosture
         ? "Önce çalışma şeklini anlat"
@@ -85,8 +83,8 @@ export function DailyChecklist() {
     },
     {
       id: "stress",
-      feature: "nefes",
-      icon: Wind,
+      icon: "self_improvement",
+      tone: "bg-t300",
       title: "Nefes egzersizi yap",
       status: breathDone ? "Bugün tamamlandı" : "Birkaç dakika yeter",
       done: breathDone,
@@ -101,63 +99,42 @@ export function DailyChecklist() {
 
   return (
     <View className="gap-3">
-      <View className="flex-row items-baseline justify-between px-5">
-        <Text variant="title">Günün önerileri</Text>
+      <View className="flex-row items-baseline justify-between">
+        <Text variant="section">Günün önerileri</Text>
         <Text variant="data" muted>
           {doneCount} / {shown.length}
         </Text>
       </View>
 
-      <View className="px-5">
-        <Card className="gap-0 p-0">
-          {shown.map((item, i) => (
-            <Pressable
-              key={item.id}
-              accessibilityRole="button"
-              accessibilityLabel={`${item.title}: ${item.status}`}
-              accessibilityState={{ checked: item.done }}
-              onPress={() => router.push(item.href)}
-              style={{ minHeight: touchTarget.min }}
-              className={cn("px-5 py-3.5", i > 0 && "border-t border-border")}
+      <View className="gap-2">
+        {shown.map((item) => (
+          <Pressable
+            key={item.id}
+            accessibilityRole="button"
+            accessibilityLabel={`${item.title}: ${item.status}`}
+            accessibilityState={{ checked: item.done }}
+            onPress={() => router.push(item.href)}
+            style={{ minHeight: touchTarget.min }}
+            className="flex-row items-center gap-3 rounded-card bg-white py-3 pl-3 pr-4 active:scale-[0.98]"
+          >
+            <View
+              className={cn("items-center justify-center rounded-full", item.done ? "bg-t900" : item.tone)}
+              style={{ width: 44, height: 44 }}
             >
-              {({ pressed }) => (
-                <View className="flex-row items-center gap-3" style={{ opacity: pressed ? 0.65 : 1 }}>
-                  <FeatureTint feature={item.feature}>
-                    <ItemBadge icon={item.icon} done={item.done} />
-                  </FeatureTint>
-                  <View className="flex-1 gap-0.5">
-                    <Text variant="subhead" muted={item.done}>
-                      {item.title}
-                    </Text>
-                    <Text variant="bodySm" muted>
-                      {item.status}
-                    </Text>
-                  </View>
-                  <ChevronRight size={18} strokeWidth={1.75} color={rgb(palette.textMuted)} />
-                </View>
-              )}
-            </Pressable>
-          ))}
-        </Card>
+              <Icon name={item.done ? "check" : item.icon} size={22} className={item.done ? "text-white" : "text-t900"} />
+            </View>
+            <View className="flex-1 gap-0.5">
+              <Text variant="subhead" muted={item.done}>
+                {item.title}
+              </Text>
+              <Text variant="caption" muted>
+                {item.status}
+              </Text>
+            </View>
+            <Icon name="chevron_right" size={24} />
+          </Pressable>
+        ))}
       </View>
-    </View>
-  );
-}
-
-/** Modülün kendi aksanıyla boyanan durum rozeti. */
-function ItemBadge({ icon: Icon, done }: { icon: LucideIcon; done: boolean }) {
-  const palette = usePalette();
-
-  return (
-    <View
-      className={cn("items-center justify-center rounded-full", done ? "bg-accent" : "bg-accent/10")}
-      style={{ width: 32, height: 32 }}
-    >
-      {done ? (
-        <Check size={16} strokeWidth={2.5} color={rgb(palette.onAccent)} />
-      ) : (
-        <Icon size={16} strokeWidth={1.75} color={rgb(palette.accent)} />
-      )}
     </View>
   );
 }

@@ -7,6 +7,7 @@ import {
   Bell,
   BookOpen,
   Database,
+  Palette,
   Droplet,
   Eye,
   FileText,
@@ -19,12 +20,12 @@ import {
   Wind,
 } from "lucide-react-native";
 import { useState } from "react";
-import { Alert, ScrollView, TextInput, View } from "react-native";
+import { Alert, ScrollView, TextInput } from "react-native";
 
 import { PermissionHint } from "@/components/PermissionHint";
 import { SettingsGroup } from "@/components/settings/SettingsGroup";
 import { SettingsRow } from "@/components/settings/SettingsRow";
-import { Button, Card, Screen, Segmented, Text } from "@/components/ui";
+import { Button, Card, Screen, Text } from "@/components/ui";
 import { signOut, useAuthStore } from "@/lib/auth-store";
 import { DAILY_MODULES, useDailyModulesStore, type DailyModule } from "@/lib/daily-modules-store";
 import { useEyeStrainSettings } from "@/lib/eye-strain-queries";
@@ -34,14 +35,9 @@ import { useStressProfile } from "@/lib/stress-queries";
 import { useReminders, type ReminderCategory } from "@/lib/use-reminders";
 import { useWaterGoal } from "@/lib/water-queries";
 import { useWelcomeStore } from "@/lib/welcome-store";
-import { useThemeStore, type ThemePreference } from "@/theme/theme-store";
+import { useHueStore } from "@/theme/hue-store";
+import { hueName } from "@/theme/tones";
 import { touchTarget } from "@/theme/tokens";
-
-const THEME_OPTIONS: readonly { value: ThemePreference; label: string }[] = [
-  { value: "light", label: "Açık" },
-  { value: "dark", label: "Koyu" },
-  { value: "system", label: "Sistem" },
-];
 
 const DAILY_MODULE_LABEL: Record<DailyModule, string> = {
   eye: "Göz molası",
@@ -65,8 +61,7 @@ export default function SettingsScreen() {
   const [confirmation, setConfirmation] = useState("");
   const [status, setStatus] = useState<string | null>(null);
 
-  const themePreference = useThemeStore((s) => s.preference);
-  const setThemePreference = useThemeStore((s) => s.setPreference);
+  const hue = useHueStore((s) => s.hue);
   const dailyEnabled = useDailyModulesStore((s) => s.enabled);
   const setDailyModule = useDailyModulesStore((s) => s.set);
 
@@ -125,10 +120,12 @@ export default function SettingsScreen() {
     <Screen edges={["bottom"]}>
       <ScrollView contentContainerClassName="gap-6 p-5 pb-12">
         <SettingsGroup title="Görünüm">
-          <View className="gap-3 px-5 py-4">
-            <Text variant="body">Tema</Text>
-            <Segmented options={THEME_OPTIONS} value={themePreference} onChange={setThemePreference} />
-          </View>
+          <SettingsRow
+            icon={Palette}
+            label="Tema rengi"
+            value={hueName(hue)}
+            onPress={() => router.push("/profile")}
+          />
         </SettingsGroup>
 
         <SettingsGroup

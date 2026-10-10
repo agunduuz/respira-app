@@ -4,7 +4,6 @@ import { TextInput, View, type TextInputProps } from "react-native";
 import { FieldLabel } from "@/components/nutrition/FieldLabel";
 import { Text } from "@/components/ui";
 import { cn } from "@/theme/cn";
-import { touchTarget } from "@/theme/tokens";
 
 interface Props extends TextInputProps {
   label: string;
@@ -22,10 +21,11 @@ export function Field({ label, hint, optional, error, className, onFocus, onBlur
       <FieldLabel label={label} optional={optional} />
       <TextInput
         accessibilityLabel={label}
-        style={{ minHeight: touchTarget.min }}
+        style={{ minHeight: 52 }}
+        placeholderTextColor="#8B8A98"
         className={cn(
-          "rounded-md border bg-surface px-4 font-body text-body text-text",
-          error ? "border-danger" : focused ? "border-accent" : "border-border-strong",
+          "rounded-[22px] border-[1.5px] bg-white px-5 font-bodySemiBold text-body text-t900",
+          error ? "border-danger" : focused ? "border-t900" : "border-line",
           className
         )}
         onFocus={(e) => {

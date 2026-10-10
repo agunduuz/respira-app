@@ -1,6 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { colorScheme } from "nativewind";
-import { useColorScheme } from "react-native";
 import { create } from "zustand";
 
 export type ThemePreference = "dark" | "light" | "system";
@@ -22,9 +21,11 @@ interface ThemeState {
 }
 
 /** NativeWind'in çalışma zamanı şeması; SSR'da (DOM yok) hata fırlattığı için korumalı. */
-function applyScheme(next: ThemePreference) {
+function applyScheme(_next: ThemePreference) {
   if (typeof window === "undefined") return;
-  colorScheme.set(next);
+  // Lavanta Blok yalnızca açık tema. Koyu tema tasarıma girene kadar NativeWind
+  // her zaman "light"ta tutulur; tercih saklanmaya devam eder.
+  colorScheme.set("light");
 }
 
 export const useThemeStore = create<ThemeState>((set) => ({
@@ -59,9 +60,8 @@ export const useThemeStore = create<ThemeState>((set) => ({
  * eskiden `preference !== "light"` koyu sayıyordu, "system" hep koyu çıkıyordu.
  */
 export function useIsDark(): boolean {
-  const preference = useThemeStore((s) => s.preference);
-  const system = useColorScheme();
-  return preference === "dark" || (preference === "system" && system === "dark");
+  // Lavanta Blok tasarımında koyu tema yok — bkz. applyScheme.
+  return false;
 }
 
 /**

@@ -28,7 +28,7 @@ export function SettingsGroup({
       <Card className="gap-0 p-0">
         {rows.map((row, i) => (
           <Fragment key={i}>
-            {i > 0 ? <View className="h-px bg-border" style={{ marginLeft: 20 }} /> : null}
+            {i > 0 ? <View className="h-[1.5px] bg-line" style={{ marginLeft: 20 }} /> : null}
             {row}
           </Fragment>
         ))}

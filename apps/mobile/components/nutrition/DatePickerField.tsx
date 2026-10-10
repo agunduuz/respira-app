@@ -78,8 +78,8 @@ export function DatePickerField({ label, value, onChange, optional, hint, error 
         accessibilityLabel={label}
         style={{ minHeight: touchTarget.min }}
         className={cn(
-          "flex-row items-center justify-between rounded-md border bg-surface px-4",
-          error ? "border-danger" : "border-border-strong"
+          "flex-row items-center justify-between rounded-[22px] border-[1.5px] bg-white px-5",
+          error ? "border-danger" : "border-line"
         )}
       >
         <Text variant="body" className={displayValue ? "text-text" : "text-text-muted"}>
@@ -107,7 +107,7 @@ export function DatePickerField({ label, value, onChange, optional, hint, error 
           onPress={() => setOpen(false)}
         />
         <View
-          className="gap-4 rounded-t-xl border-t border-border bg-surface p-5"
+          className="gap-4 rounded-t-[32px] bg-white p-5"
           style={{ position: "absolute", left: 0, right: 0, bottom: 0 }}
         >
           <View className="flex-row items-center justify-between">
@@ -184,11 +184,11 @@ export function DatePickerField({ label, value, onChange, optional, hint, error 
                       borderRadius: 18,
                       alignItems: "center",
                       justifyContent: "center",
-                      backgroundColor: selected ? rgb(palette.accent) : "transparent",
+                      backgroundColor: selected ? rgb(palette.t900) : "transparent",
                       opacity: future ? 0.3 : 1,
                     }}
                   >
-                    <Text variant="data" className={selected ? "text-on-accent" : "text-text"}>
+                    <Text variant="data" className={selected ? "text-white" : "text-t900"}>
                       {day}
                     </Text>
                   </Pressable>

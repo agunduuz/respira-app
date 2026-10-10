@@ -13,7 +13,6 @@ import {
   type MealEntryInput,
 } from "@respira/shared-types";
 import { router, useLocalSearchParams } from "expo-router";
-import { Plus } from "lucide-react-native";
 import { useMemo, useRef, useState } from "react";
 import { Pressable, ScrollView, View } from "react-native";
 
@@ -22,10 +21,9 @@ import { Field } from "@/components/nutrition/Field";
 import { FieldLabel } from "@/components/nutrition/FieldLabel";
 import { FoodSearchField } from "@/components/nutrition/FoodSearchField";
 import { MacroSummary } from "@/components/nutrition/MacroSummary";
-import { Button, Card, Screen, Segmented, Text } from "@/components/ui";
+import { Button, Card, IconButton, Screen, Segmented, Text } from "@/components/ui";
 import { useAddMeal, useNutritionProfile } from "@/lib/nutrition-queries";
 import { pressedOpacity, touchTarget } from "@/theme/tokens";
-import { rgb, usePalette } from "@/theme/use-palette";
 
 type Mode = "SIMPLE" | "DETAILED";
 type MacroKey = "calories" | "protein" | "carbs" | "fat" | "fiber";
@@ -102,7 +100,6 @@ export default function MealEntryScreen() {
   const [error, setError] = useState<string | null>(null);
   const [items, setItems] = useState<ListedItem[]>([]);
   const nextKey = useRef(0);
-  const palette = usePalette();
 
   /** Yalnızca bu besin için çevrilebilen birimler (UI-008). */
   const units = useMemo(() => (food ? availableUnits(food) : ALL_UNITS), [food]);
@@ -233,6 +230,16 @@ export default function MealEntryScreen() {
     setEditingMacros(d.editingMacros);
   }
 
+  /** Yüzen çubuktaki tek satırlık özet. */
+  const summary =
+    mode === "SIMPLE"
+      ? rawText.trim()
+        ? "Not kaydedilecek"
+        : "Henüz bir şey yazılmadı"
+      : items.length > 0
+        ? `${items.length} besin${totals.calories !== null ? ` · +${Math.round(totals.calories)} kcal` : ""}`
+        : "Henüz besin seçilmedi";
+
   async function submit() {
     setError(null);
 
@@ -288,8 +295,18 @@ export default function MealEntryScreen() {
   }
 
   return (
-    <Screen edges={["bottom"]}>
-      <ScrollView contentContainerClassName="gap-4 p-5 pb-8" keyboardShouldPersistTaps="handled">
+    <Screen edges={["top", "bottom"]}>
+      <ScrollView contentContainerClassName="gap-[14px] px-[18px] pb-[130px] pt-2" keyboardShouldPersistTaps="handled">
+        <View className="flex-row items-center justify-between">
+          <View className="flex-1">
+            <Text variant="bodySm" muted>
+              {label.trim() ? `${label.trim()} öğününe` : "Öğüne"}
+            </Text>
+            <Text variant="headline">Besin ekle</Text>
+          </View>
+          <IconButton icon="close" iconSize={22} label="Kapat" onPress={() => router.back()} />
+        </View>
+
         <Card className="gap-4">
           <ChoiceGroup<string>
             label="Öğün"
@@ -357,7 +374,7 @@ export default function MealEntryScreen() {
                 {items.map((entry) => (
                   <View
                     key={entry.key}
-                    className="flex-row items-center gap-3 rounded-lg border border-border bg-surface p-3"
+                    className="flex-row items-center gap-3 rounded-[20px] bg-t50 p-3"
                   >
                     <View className="flex-1 gap-0.5">
                       <Text variant="label" numberOfLines={1}>
@@ -449,7 +466,7 @@ export default function MealEntryScreen() {
                   ) : (
                     // Tek seçenekli bir seçici anlamsız; birimi sabit gösteriyoruz.
                     <View
-                      className="items-center justify-center rounded-full border border-border bg-surface"
+                      className="items-center justify-center rounded-full bg-t50"
                       style={{ minHeight: touchTarget.min }}
                     >
                       <Text variant="label" muted>
@@ -558,8 +575,7 @@ export default function MealEntryScreen() {
               <Button
                 title="Listeye ekle"
                 variant="secondary"
-                icon={Plus}
-                iconColor={rgb(palette.accent)}
+                className="border-[1.5px] border-line"
                 onPress={addItem}
               />
             ) : null}
@@ -572,8 +588,38 @@ export default function MealEntryScreen() {
           </Text>
         ) : null}
 
-        <Button title="Kaydet" onPress={submit} loading={add.isPending} />
       </ScrollView>
+
+      {/* Yüzen kayıt çubuğu (Lavanta Blok): öğün adı + özet + Kaydet */}
+      <View
+        pointerEvents="box-none"
+        className="absolute bottom-0 left-0 right-0 px-[14px] pb-[26px]"
+      >
+        <View
+          className="flex-row items-center gap-3 rounded-[34px] bg-t300 py-[10px] pl-[22px] pr-[10px]"
+          style={{ shadowColor: "#000", shadowOpacity: 0.16, shadowRadius: 16, shadowOffset: { width: 0, height: 10 }, elevation: 6 }}
+        >
+          <View className="flex-1">
+            <Text variant="caption">{label.trim() || "Öğün"}</Text>
+            <Text variant="subhead" className="text-[16px] font-black" numberOfLines={1}>
+              {summary}
+            </Text>
+          </View>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Kaydet"
+            accessibilityState={{ disabled: add.isPending, busy: add.isPending }}
+            disabled={add.isPending}
+            onPress={submit}
+            style={{ height: 50, opacity: add.isPending ? 0.6 : 1 }}
+            className="justify-center rounded-full bg-t900 px-[22px] active:scale-[0.96]"
+          >
+            <Text variant="button" className="text-[15px] text-white">
+              {add.isPending ? "Kaydediliyor…" : "Kaydet"}
+            </Text>
+          </Pressable>
+        </View>
+      </View>
     </Screen>
   );
 }

@@ -48,8 +48,8 @@ export function TimePickerField({ label, value, onChange, hint, error }: Props) 
         accessibilityLabel={label}
         style={{ minHeight: touchTarget.min }}
         className={cn(
-          "flex-row items-center justify-between rounded-md border bg-surface px-4",
-          error ? "border-danger" : "border-border-strong"
+          "flex-row items-center justify-between rounded-[22px] border-[1.5px] bg-white px-5",
+          error ? "border-danger" : "border-line"
         )}
       >
         <Text variant="body">{value}</Text>
@@ -75,7 +75,7 @@ export function TimePickerField({ label, value, onChange, hint, error }: Props) 
           onPress={() => setOpen(false)}
         />
         <View
-          className="gap-4 rounded-t-xl border-t border-border bg-surface p-5"
+          className="gap-4 rounded-t-[32px] bg-white p-5"
           style={{ position: "absolute", left: 0, right: 0, bottom: 0 }}
         >
           <View className="items-center gap-1">
@@ -116,11 +116,11 @@ function TimeCell({ label, selected, onPress }: { label: string; selected: boole
       accessibilityLabel={label}
       style={{ minHeight: touchTarget.min - 8 }}
       className={cn(
-        "items-center justify-center rounded-md border",
-        selected ? "border-accent bg-accent/10" : "border-transparent bg-text/5"
+        "items-center justify-center rounded-[14px] border-[1.5px]",
+        selected ? "border-t900 bg-t900" : "border-line bg-white"
       )}
     >
-      <Text variant="data" className={selected ? "text-accent" : "text-text"}>
+      <Text variant="data" className={selected ? "text-white" : "text-t900"}>
         {label}
       </Text>
     </Pressable>

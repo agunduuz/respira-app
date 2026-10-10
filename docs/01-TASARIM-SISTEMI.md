@@ -18,43 +18,29 @@ Bu projede iki tasarım kaynağı birlikte kullanılacak. İkisi farklı işler 
 - **Sayfanın/uygulamanın tek işi:** Günün akışına sessizce eşlik eden, rahatsız etmeyen ama görmezden de gelinemeyen bir "beden farkındalığı" katmanı olmak.
 - **Kaçınılacak jenerik varsayılan:** Tipik "wellness app" görünümü — pastel yeşil/turkuaz + yuvarlak hatlı ikonlar + generic "sağlık" fotoğrafları. Bunun yerine daha az klişe, daha kişisel bir görsel dil hedefleniyor.
 
-## Renk Paleti (İlk Öneri — token sistemi)
+## Görsel Dil: Lavanta Blok (UI-009…013)
 
-Bu bir başlangıç noktası; Claude Code, `ui-ux-pro-max-skill`'den somut paletleri tarayıp bunun yerini alacak veya bunu geliştirecek şekilde kullanılmalı.
+Kaynak tasarım: `Respira B - Lavanta Blok.dc.html` (Claude Design, yaklaşım 2/3). Bu bölüm önceki mint/koyu palet ve özellik-başına-aksan sisteminin **yerine geçer**.
 
-| Token | Hex | Kullanım |
-|---|---|---|
-| `--color-base` | `#0F1712` | Koyu tema arka planı — göz yorucu mavi ışıktan kaçınmak için sıcak, neredeyse-siyah yeşilimsi ton |
-| `--color-surface` | `#1A2620` | Kart/panel yüzeyleri |
-| `--color-accent-primary` | `#7CE0B8` | Ana aksiyon rengi — canlı ama yumuşak bir mint, "nefes al" hissi veriyor |
-| `--color-accent-warm` | `#E8A15C` | İkincil aksan — enerji/uyarı gerektiren yerler (bildirim, streak) |
-| `--color-text-primary` | `#F3F6F4` | Ana metin |
-| `--color-text-muted` | `#8FA396` | İkincil metin |
+### Renk: tek ana renk, 15 ton
+- **Tek kaynak hue (0–360°).** Varsayılan 290 (mor). Kullanıcı Profil > **Tema rengi**'nden 8 hazır renkten (Mor, İndigo, Mavi, Turkuaz, Yeşil, Kehribar, Mercan, Pembe) ya da serbest renk çubuğundan seçer; seçim cihazda kalıcıdır (`theme/hue-store.ts`, AsyncStorage) ve tüm uygulama anında yeniden boyanır.
+- **Ton ölçeği** (`theme/tones.ts`, tasarımdaki `TONES` ile birebir): `t25 t50 t100 t200 t300 t400 t500 t600 t700 t800 t900` + `mut`, `mutL` (ikincil metin) + `line`, `line2` (ayraç). Hepsi OKLCH açıklık/kroma basamağı; RN `oklch()` okumadığı için `lib/oklch.ts` sRGB'ye çevirir (gamut dışı renk kırpılmaz, kroma düşürülür; testli).
+- **Nasıl uygulanır:** `components/ThemeRoot.tsx` hue'dan üretilen CSS değişkenlerini kökte `vars()` ile verir; Tailwind renkleri bu değişkenlere bağlıdır (`bg-t300`, `text-mut`, `border-line`). Ekranlarda ham hex yok. JS tarafı (SVG, navigasyon) `usePalette()` okur. `global.css` yalnızca ilk kare için varsayılan (mor) değerleri tutar.
+- **Eski semantik token'lar** (`bg`, `surface`, `text`, `text-muted`, `accent`, `border`, `danger`) tonlara eşlenir: bg=t25, surface=beyaz, text=t900, muted=mut, accent=t900. Tehlike rengi hue'dan bağımsız kırmızıdır.
+- **Modül rengi yok, modül bloğu var:** Her modül kendi ana rengini değil, aynı ölçekten kendi ton bloğunu alır — Göz t200 · Su t100 · Postür t400 · Nefes t300 · Beslenme t200/t50 · koyu vurgu t900.
+- **Koyu tema:** tasarımda yok; şimdilik yalnızca açık tema (`useIsDark()` her zaman false). Koyu tema tasarıma girerse ton ölçeği ters çevrilerek eklenir.
 
-Açık tema karşılıkları bu paletten türetildi (ters kontrast, aynı ton ailesi).
-
-### Özellik Başına Aksan (UI-004)
-
-Taban renkler (zemin, yüzey, kenarlık, metin) **her modülde aynı** kalır; yalnızca aksan değişir. Böylece her modülün kendi kimliği olur ama uygulama dağınık bir pastel koleksiyonuna dönüşmez.
-
-| Modül | Açık tema | Koyu tema | Neden |
-|---|---|---|---|
-| Anasayfa / Bugün / Ayarlar | `#0B6B49` | `#7CE0B8` | Markanın mint yeşili — kurumsal palet |
-| Göz | `#7A4A21` | `#DDB892` | Kahve/ela; ekran ışığının karşısında sıcak ve yumuşak |
-| Beslenme | `#8A5B12` | `#E8C07A` | Kavrulmuş amber |
-| Su | `#12608F` | `#86C7EC` | Mavi |
-| Duruş | `#9C4221` | `#F0A98C` | Kil/terrakota — harekete çağıran toprak tonu |
-| Nefes | `#4C4F9F` | `#B9BDF2` | Sakin indigo; diğerlerinden serin ve sofistike |
-
-- **Tanım:** `theme/tokens.ts` → `featureAccents`. Hepsi WCAG AA (açık temada beyaz kart üstünde ≥5.36:1, koyuda yüzey üstünde ≥8.02:1).
-- **Uygulama:** `theme/feature-theme.tsx`. Aktif rota `RouteFeatureTint` ile modülü belirler; aksan hem CSS değişkeni (`bg-accent`, `text-accent` gibi tüm sınıflar) hem JS tarafı (`usePalette()`) için aynı anda değişir. Ekranlar tek tek işaretlenmez.
-- **Karma listelerde:** Anasayfa ve Bugün kurumsal palette kalır; yalnızca modül satırları/slaytları `FeatureTint` ile kendi rengini alır.
+### Bileşen dili
+- **Bloklar:** büyük blok 28–30, küçük kart/karo 22–26, sayfa başlık bloğunun alt köşeleri 40, etiketler 11–14, düğme/çubuk tam kapsül (`theme/tokens.ts` → `radius`). Çizgi yerine renk bloğu sınırı çizer; beyaz kart + 1.5px `line` yalnızca liste satırlarında.
+- **Kapsül düğme** 58px, t900 zemin + beyaz metin; ikincil beyaz + 1.5px çizgi. **Yuvarlak ikon düğmesi** 46px. **Hap etiket** yarı saydam beyaz. **Anahtar** 52×30, açıkken t900. Basma geri bildirimi `active:scale-*` (NativeWind `active:`; `Pressable` style-fonksiyonu className ile birlikte çalışmaz).
+- **Halkalar** (`components/Rings.tsx`): react-native-svg, iç içe, 12 yönünden başlar, yuvarlak uç, .5s akarak dolar; Skia gerektirmez.
+- **İkonlar:** Material Symbols Rounded (`components/ui/Icon`, ligatür adıyla: `home`, `water_drop`…). Lucide yalnızca eski `FeatureIntro`/`Button` ikon prop'unda kalır.
+- **Gezinme:** siyah kapsül çubuk (`components/CapsuleTabBar.tsx`) — `home · grid_view · bar_chart · person`; aktif sekme beyaz hap (92×62). İçerik altta ~130px pay bırakır (`TabScroll`).
 
 ## Tipografi
 
-- **Display/başlık:** *Fraunces* — karakterli, editoryal bir serif (optical-size ve soft/wonk eksenleri sayesinde büyük boyutlarda kişilikli, jenerik "startup sans-serif" hissinden uzak). Sayaçlar ve büyük rakamlar (örn. su litresi, kalan dakika) bu yazı tipiyle gösterilecek çünkü uygulamanın en sık bakılan öğeleri bunlar. (Önceki seçim *Space Grotesk* idi — 2026-09-19'da daha karakteristik bir seçim için değiştirildi.)
-- **Gövde metni:** Okunabilirliği yüksek, nötr bir sans-serif (*Inter*).
-- **Veri/etiket:** Tabular rakamlarla bir mono/utility font (*IBM Plex Mono*) — grafiklerdeki sayılar hizalı dursun diye. Bu, görünen tipografi "sesini" ikiye indirme (Fraunces + Inter) hedefiyle çelişmiyor; salt hizalama için teknik bir yardımcı font.
+- **Tek aile: Urbanist** (500–900). Gövde 500, vurgu 600/700, başlık 800, büyük rakam ve ekran başlığı 900 + hafif negatif harf aralığı. Sayaçlar ve büyük rakamlar (su 50, göz 80, saat 44) bu yazı tipiyle; `data` rakamları tabular.
+- Eski Fraunces/Inter/IBM Plex Mono kaldırıldı. Font adları `theme/tokens.ts` → `fontFamily` (eski takma adlar — `display`, `body`, `data` — korunur).
 
 ## Animasyon Stratejisi (3 katman)
 
@@ -85,12 +71,12 @@ Apple HIG alt barda 3-5 öğe öneriyor ve sekmelerin *eylem* değil *bölüm* o
 
 | Sekme | İçerik |
 |---|---|
-| **Anasayfa** | Selamlama, günün notu ve yatay kaydırmalı "Keşfet" şeridi (`lib/discover.ts`). Bilinçli olarak tek bir eyleme zorlamaz; göz atılacak bir alan bırakır. |
-| **Bugün** | Göz, Su, Duruş ve Nefes'in tek satırlık durumu + en sık yapılan eylem (`components/TodayCard`). Karta dokunmak modülün kendi ekranını açar (`/eye`, `/water`, `/posture`, `/stress`). |
-| **Beslenme** | Öğün girişi, makro takibi ve raporlar — veri yoğunluğu nedeniyle kendi bölümü. |
-| **Profil** | Kişisel bilgiler, aylık istatistikler ve aktivite takvimi. Sağ üstteki dişli ayrı bir **Ayarlar** ekranı açar (`/settings`). |
+| **Anasayfa** `home` | Lavanta Blok "Bugün": üç halka (göz · su · kalori), hafta şeridi, günün planı blokları; altında günün önerileri, günün notu ve "Keşfet" şeridi (`lib/discover.ts`). |
+| **Modüller** `grid_view` | Göz, Su, Duruş, Nefes, Beslenme, Kan tahlili blokları: durum + en sık eylem (`components/ModuleTile`). Karta dokunmak modülün kendi ekranını açar. |
+| **Beslenme** `bar_chart` | Makro halkaları, öğün blokları, öneri, favoriler, raporlar ve kan tahlili hatırlatması. |
+| **Profil** `person` | Koyu başlık bloğu, **Tema rengi**, bildirim anahtarları, gizlilik; altında aylık özet ve aktivite takvimi. Dişli **Ayarlar**'ı açar (`/settings`). |
 
-- **Ayarlar içeriği (UI-005):** Gruplu satır listesi (`components/settings/`): Görünüm (tema: Açık/Koyu/Sistem, kalıcı) · Hatırlatmalar (modül başına anahtar) · Alışkanlıklar (süre, hedef, profil) · Günün önerileri (Anasayfa'da hangi modüller) · Yardım · Gizlilik ve veri · Hesap.
+- **Ayarlar içeriği (UI-005):** Gruplu satır listesi (`components/settings/`): Görünüm (Tema rengi → Profil) · Hatırlatmalar (modül başına anahtar) · Alışkanlıklar (süre, hedef, profil) · Günün önerileri (Anasayfa'da hangi modüller) · Yardım · Gizlilik ve veri · Hesap.
 - **Hatırlatmalar tek kaynaktan:** Durum bileşen state'inden değil planlı bildirimlerden okunur (`lib/use-reminders.ts`). Ayarlar'daki anahtar ile her modülün kendi ekranındaki "Hatırlatmaları aç/kapat" butonu aynı şeyi gösterir ve aynı şeyi değiştirir. İzin reddedilmişse `PermissionHint` cihaz ayarlarına yönlendirir.
 - **Profil ≠ Ayarlar:** Veri indirme, rıza yönetimi, hesap silme gibi teknik/hesap işlemleri Profil'de değil, Ayarlar ekranındadır.
 

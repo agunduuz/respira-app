@@ -207,7 +207,7 @@ export function defaultMealLabels(mealsPerDay: number): string[] {
 }
 
 /** Eski kayıtlardaki "Kahvaltı"/"Öğle" adları yeni "Sabah"/"Öğlen" ile aynı öğün sayılır. */
-function canonicalMealLabel(label: string): string {
+export function canonicalMealLabel(label: string): string {
   const l = label.trim().toLocaleLowerCase("tr-TR");
   if (l === "kahvaltı") return "sabah";
   if (l === "öğle") return "öğlen";

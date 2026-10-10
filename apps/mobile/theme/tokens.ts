@@ -1,106 +1,13 @@
 /**
  * Respira tasarım token'ları — tek doğruluk kaynağı.
- * Kaynak: docs/01-TASARIM-SISTEMI.md
+ * Kaynak: "Respira B - Lavanta Blok" tasarımı, docs/01-TASARIM-SISTEMI.md
  *
- * TASARIM YÖNÜ
- * Klişe wellness görünümünden (pastel yeşil/turkuaz, yuvarlak hatlar) bilinçli
- * olarak kaçınılıyor. Bunun yerine sıcak, neredeyse-siyah yeşilimsi bir taban:
- * ekran başında geçen uzun günün sonunda göz yormayan, mavi ışığı düşük bir
- * zemin. Aksan mint (#7CE0B8) tek "canlı" nokta — cesaret tek yerde harcanıyor.
- *
- * Renkler burada RGB kanal üçlüsü olarak duruyor ("15 23 18") çünkü NativeWind
- * bunları CSS değişkeni olarak alıp `rgb(var(--x) / <alpha-value>)` ile opaklık
- * uygulayabiliyor. Hex karşılıkları yorumda.
+ * RENKLER burada DEĞİL: Lavanta Blok'ta tek bir ana renk (hue) var ve kullanıcı
+ * onu Profil'den değiştirebiliyor. Bu yüzden renkler çalışma zamanında hue'dan
+ * üretiliyor → theme/tones.ts. Burada yalnızca renkten bağımsız ölçüler duruyor.
  */
 
-/** Koyu tema — VARSAYILAN. */
-export const darkPalette = {
-  bg: "15 23 18", // #0F1712  sıcak, neredeyse-siyah yeşil
-  surface: "26 38 32", // #1A2620  kart/panel
-  elevated: "34 50 42", // #22322A  modal, yükseltilmiş yüzey
-  border: "44 61 52", // #2C3D34  dekoratif ayraç
-  borderStrong: "90 104 95", // #5A685F  interaktif sınır — 3.11:1 (WCAG 1.4.11)
-  text: "243 246 244", // #F3F6F4  16.76:1
-  textMuted: "157 176 164", // #9DB0A4   7.97:1
-  accent: "124 224 184", // #7CE0B8  ana aksiyon — "nefes al"
-  onAccent: "5 35 26", // #05231A
-  warm: "232 161 92", // #E8A15C  streak/uyarı
-  onWarm: "36 21 5", // #241505
-  danger: "255 138 138", // #FF8A8A
-  onDanger: "42 8 8", // #2A0808
-} as const;
-
-/**
- * Açık tema — aynı ton ailesinden türetildi (ters kontrast, yeşilimsi nötrler).
- * Mint aksan açık zeminde 4.5:1'i tutturamadığı için koyulaştırıldı (#0B6B49).
- */
-export const lightPalette = {
-  bg: "242 246 241", // #F2F6F1
-  surface: "255 255 255", // #FFFFFF
-  elevated: "255 255 255", // #FFFFFF
-  border: "220 229 219", // #DCE5DB
-  borderStrong: "121 139 127", // #798B7F  3.31:1
-  text: "15 23 18", // #0F1712  16.70:1
-  textMuted: "79 97 87", // #4F6157   6.05:1
-  accent: "11 107 73", // #0B6B49   5.98:1
-  onAccent: "255 255 255", // #FFFFFF
-  warm: "138 75 18", // #8A4B12   6.21:1
-  onWarm: "255 255 255", // #FFFFFF
-  danger: "164 35 28", // #A4231C   6.78:1
-  onDanger: "255 255 255", // #FFFFFF
-} as const;
-
-export type PaletteKey = keyof typeof darkPalette;
-
-/**
- * Özellik başına aksan (UI-004). Taban renkler (zemin, yüzey, metin) her yerde
- * AYNI kalır — yalnızca aksan değişir. Böylece her modülün kendi kimliği olur
- * ama uygulama dağınık bir pastel koleksiyonuna dönüşmez.
- *
- * Hepsi WCAG AA: açık temada beyaz kart üstünde en düşük 5.36:1, koyu temada
- * yüzey üstünde en düşük 8.02:1.
- */
-export type Feature = "kurumsal" | "goz" | "beslenme" | "su" | "durus" | "nefes";
-
-export const featureAccents: Record<Feature, { light: Accent; dark: Accent }> = {
-  /** Anasayfa, Bugün, Ayarlar — markanın mint yeşili. */
-  kurumsal: {
-    light: { accent: "11 107 73", onAccent: "255 255 255" }, // #0B6B49
-    dark: { accent: "124 224 184", onAccent: "5 35 26" }, // #7CE0B8
-  },
-  /** Göz — kahve/ela tonları: ekran ışığının karşısında sıcak ve yumuşak. */
-  goz: {
-    light: { accent: "122 74 33", onAccent: "255 255 255" }, // #7A4A21
-    dark: { accent: "221 184 146", onAccent: "42 26 12" }, // #DDB892
-  },
-  /** Beslenme — kavrulmuş amber. */
-  beslenme: {
-    light: { accent: "138 91 18", onAccent: "255 255 255" }, // #8A5B12
-    dark: { accent: "232 192 122", onAccent: "36 23 5" }, // #E8C07A
-  },
-  /** Su — mavi. */
-  su: {
-    light: { accent: "18 96 143", onAccent: "255 255 255" }, // #12608F
-    dark: { accent: "134 199 236", onAccent: "4 32 47" }, // #86C7EC
-  },
-  /** Duruş — kil/terrakota: harekete çağıran toprak tonu. */
-  durus: {
-    light: { accent: "156 66 33", onAccent: "255 255 255" }, // #9C4221
-    dark: { accent: "240 169 140", onAccent: "46 16 4" }, // #F0A98C
-  },
-  /** Nefes — sakin indigo; diğerlerinden daha serin ve sofistike. */
-  nefes: {
-    light: { accent: "76 79 159", onAccent: "255 255 255" }, // #4C4F9F
-    dark: { accent: "185 189 242", onAccent: "20 21 58" }, // #B9BDF2
-  },
-};
-
-interface Accent {
-  accent: string;
-  onAccent: string;
-}
-
-/** 4/8pt ritmi — pro-rules "8dp spacing rhythm". */
+/** 4/8pt ritmi. */
 export const spacing = {
   0.5: 2,
   1: 4,
@@ -117,7 +24,7 @@ export const spacing = {
 
 /**
  * Dokunma hedefi tabanı. iOS 44pt, Android 48dp — ikisini birden karşılamak
- * için 48 alıyoruz (pro-rules "Touch Target Minimum").
+ * için 48 alıyoruz. Tasarımdaki ikon düğmeleri 46px; hitSlop ile 48'e tamamlanır.
  */
 export const touchTarget = {
   min: 48,
@@ -125,58 +32,85 @@ export const touchTarget = {
   slop: 10,
 } as const;
 
-/** Organik/biyomimetik yön: köşeler yumuşak ama yuvarlak-şirin değil. */
+/**
+ * Lavanta Blok köşe dili: bloklar 28–30, küçük kartlar 22–26, etiketler 11–14,
+ * düğmeler ve çubuklar tam kapsül.
+ */
 export const radius = {
   sm: 8,
   md: 12,
   lg: 16,
   xl: 24,
+  /** Küçük kart / ızgara karosu */
+  tile: 22,
+  card: 26,
+  /** Büyük blok */
+  block: 28,
+  blockLg: 30,
+  /** Sayfa başlık bloğunun alt köşeleri */
+  sheet: 40,
+  /** Gezinme kapsülü */
+  capsule: 37,
   full: 9999,
 } as const;
 
+/**
+ * Urbanist tek aile — ağırlık ve boyutla hiyerarşi. Tasarımdaki 500–900
+ * ağırlıkları: gövde 500, vurgu 600/700, başlık 800, büyük rakam 900.
+ * (İsimler eski bileşenlerle uyumlu kalsın diye korundu.)
+ */
 export const fontFamily = {
-  /** Sayaçlar ve büyük rakamlar — en sık bakılan öğeler. */
-  display: "Fraunces_600SemiBold",
-  displayBold: "Fraunces_700Bold",
-  body: "Inter_400Regular",
-  bodyMedium: "Inter_500Medium",
-  bodySemiBold: "Inter_600SemiBold",
-  /** Grafik/tablo rakamları hizalı dursun diye tabular mono. */
-  data: "IBMPlexMono_500Medium",
+  regular: "Urbanist_400Regular",
+  body: "Urbanist_500Medium",
+  bodyMedium: "Urbanist_600SemiBold",
+  bodySemiBold: "Urbanist_700Bold",
+  heavy: "Urbanist_800ExtraBold",
+  black: "Urbanist_900Black",
+  /** Eski adlar: başlık / büyük rakam / veri */
+  display: "Urbanist_800ExtraBold",
+  displayBold: "Urbanist_900Black",
+  data: "Urbanist_700Bold",
+  /** Material Symbols Rounded — ikonlar ligatür ile yazılır ("home"). */
+  icon: "MaterialSymbolsRounded_400Regular",
 } as const;
 
 /**
- * Tipografi ölçeği. Gövde 16pt tabanlı, satır yüksekliği 1.5 (pro-rules §6).
- * Boyutlar Dynamic Type ile ölçekleneceği için `allowFontScaling` kapatılmıyor.
+ * Tipografi ölçeği (tasarımdaki boyutlar). Dynamic Type için allowFontScaling
+ * kapatılmıyor.
  */
 export const typeScale = {
-  displayXl: { fontSize: 48, lineHeight: 52 },
-  displayLg: { fontSize: 34, lineHeight: 40 },
-  title: { fontSize: 22, lineHeight: 28 },
+  /** Sayaç / dev rakam (göz 80, su 50, saat 44) */
+  numHero: { fontSize: 54, lineHeight: 54 },
+  displayXl: { fontSize: 48, lineHeight: 50 },
+  displayLg: { fontSize: 34, lineHeight: 38 },
+  /** Ekran başlığı (Lavanta Blok: 30–36) */
+  headline: { fontSize: 30, lineHeight: 32 },
+  title: { fontSize: 22, lineHeight: 26 },
+  /** Bölüm başlığı (24) */
+  section: { fontSize: 24, lineHeight: 28 },
   body: { fontSize: 16, lineHeight: 24 },
-  bodySm: { fontSize: 14, lineHeight: 21 },
-  /** Form etiketleri ve seçim çipleri — Apple HIG "subheadline" karşılığı. */
+  bodySm: { fontSize: 14, lineHeight: 20 },
   subhead: { fontSize: 15, lineHeight: 20 },
-  /** Buton metni — gövde boyutunda, kalınlıkla ayrışır (HIG). */
-  button: { fontSize: 16, lineHeight: 22 },
+  button: { fontSize: 17, lineHeight: 22 },
   label: { fontSize: 13, lineHeight: 18 },
+  /** Hap etiket / küçük not */
+  caption: { fontSize: 12, lineHeight: 16 },
   data: { fontSize: 15, lineHeight: 20 },
 } as const;
 
-/**
- * Motion. pro-rules: "tek süreyi her geçişe kopyalama" — süre mesafeye ve
- * karmaşıklığa göre seçilir. Hareket azaltma açıkken bunlar 0'a düşer.
- */
+/** Motion — süre mesafeye ve karmaşıklığa göre. Hareket azaltma açıkken 0'a düşer. */
 export const motion = {
-  /** Basma geri bildirimi — 80-150ms aralığında olmalı. */
+  /** Basma geri bildirimi (tasarımda scale .9–.97). */
   press: 120,
-  /** Küçük durum değişimi (renk, opaklık). */
-  micro: 180,
-  /** Kart açılma, sayfa içi geçiş. */
-  standard: 280,
-  /** Skia imza animasyonları (nefes döngüsü, su dolumu). */
-  expressive: 600,
+  /** Küçük durum değişimi (renk, toggle .2s). */
+  micro: 200,
+  /** Halka / çubuk dolumu (.4–.6s). */
+  standard: 500,
+  /** Su dalgası, nefes orb'u. */
+  expressive: 1200,
 } as const;
 
-/** Basma geri bildirimi: layout sınırlarını kaydırmadan (pro-rules). */
+/** Basma geri bildirimi: layout sınırlarını kaydırmadan. */
 export const pressedOpacity = 0.65;
+/** Tasarımdaki `style-active: transform:scale(.97)` */
+export const pressedScale = 0.97;

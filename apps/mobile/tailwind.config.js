@@ -7,8 +7,7 @@ const color = (name) => `rgb(var(--${name}) / <alpha-value>)`;
 module.exports = {
   content: ["./app/**/*.{js,jsx,ts,tsx}", "./components/**/*.{js,jsx,ts,tsx}"],
   presets: [require("nativewind/preset")],
-  // Koyu tema uygulama varsayılanı olduğu için sistem tercihine değil,
-  // açıkça ayarlanan color scheme'e bağlıyoruz (theme/theme-store.ts).
+  // Lavanta Blok yalnızca açık tema; koyu tema tasarıma girince burası yeniden açılır.
   darkMode: "class",
   theme: {
     // Palet bilinçli olarak KAPALI liste: ekranlarda bg-red-500 gibi rastgele
@@ -16,6 +15,25 @@ module.exports = {
     colors: {
       transparent: "transparent",
       current: "currentColor",
+      white: "#FFFFFF",
+      // Lavanta Blok ton ölçeği — değerler çalışma zamanında hue'dan üretilir
+      // (theme/tones.ts → ThemeRoot). Ekranlarda yine ham hex yok.
+      t25: color("t25"),
+      t50: color("t50"),
+      t100: color("t100"),
+      t200: color("t200"),
+      t300: color("t300"),
+      t400: color("t400"),
+      t500: color("t500"),
+      t600: color("t600"),
+      t700: color("t700"),
+      t800: color("t800"),
+      t900: color("t900"),
+      mut: color("mut"),
+      "mut-l": color("mut-l"),
+      line: color("line"),
+      "line-2": color("line-2"),
+      // Semantik takma adlar (eski ekranlar) — tonlara eşlenir.
       bg: color("bg"),
       surface: color("surface"),
       elevated: color("elevated"),

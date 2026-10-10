@@ -1,25 +1,24 @@
-import { Lightbulb } from "lucide-react-native";
 import { View } from "react-native";
 
-import { Text } from "@/components/ui";
+import { Icon, Text } from "@/components/ui";
 import { cn } from "@/theme/cn";
-import { rgb, usePalette } from "@/theme/use-palette";
 
 /**
- * Ana eylemin altında duran, dokunma gerektirmeyen küçük bilgi kartı. Kullanıcıyı
- * bir şeye zorlamaz; ekrana göz atmaya değer, dolaylı bir içerik alanı sağlar.
+ * Ana eylemin altında duran, dokunma gerektirmeyen küçük bilgi bloğu (Lavanta
+ * Blok: t300 zemin, dolgulu "auto_awesome" ikonu). Kullanıcıyı bir şeye
+ * zorlamaz; göz atmaya değer, dolaylı bir içerik alanı sağlar.
  */
 export function InfoTip({ text, className }: { text: string; className?: string }) {
-  const palette = usePalette();
-
   return (
-    <View className={cn("flex-row items-start gap-3 rounded-lg bg-accent/10 p-4", className)}>
-      <Lightbulb size={18} strokeWidth={1.75} color={rgb(palette.accent)} />
+    <View className={cn("flex-row items-start gap-3 rounded-card bg-t300 px-[18px] py-4", className)}>
+      <Icon name="auto_awesome" size={22} className="text-t900" />
       <View className="flex-1 gap-1">
-        <Text variant="subhead" className="text-accent">
+        <Text variant="label" className="text-t900">
           Biliyor muydun?
         </Text>
-        <Text variant="bodySm">{text}</Text>
+        <Text variant="bodySm" className="font-bodySemiBold text-t900">
+          {text}
+        </Text>
       </View>
     </View>
   );

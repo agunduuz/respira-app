@@ -1,11 +1,9 @@
-import { Check } from "lucide-react-native";
 import { Pressable, View } from "react-native";
 
 import { FieldLabel } from "@/components/nutrition/FieldLabel";
-import { Text } from "@/components/ui";
+import { Icon, Text } from "@/components/ui";
 import { cn } from "@/theme/cn";
 import { touchTarget } from "@/theme/tokens";
-import { rgb, usePalette } from "@/theme/use-palette";
 
 export interface Choice<T extends string> {
   value: T;
@@ -34,8 +32,6 @@ export function MultiChoiceGroup<T extends string>({
   optional,
   hint,
 }: Props<T>) {
-  const palette = usePalette();
-
   function toggle(v: T) {
     onChange(value.includes(v) ? value.filter((x) => x !== v) : [...value, v]);
   }
@@ -55,21 +51,14 @@ export function MultiChoiceGroup<T extends string>({
               onPress={() => toggle(c.value)}
               style={{ minHeight: touchTarget.min }}
               className={cn(
-                "flex-row items-center justify-center gap-1.5 rounded-full border px-4",
-                selected ? "border-accent bg-accent/10" : "border-transparent bg-text/5"
+                "flex-row items-center justify-center gap-1.5 rounded-full border-[1.5px] px-4 active:scale-[0.96]",
+                selected ? "border-t900 bg-t900" : "border-line bg-white"
               )}
             >
-              {({ pressed }) => (
-                <View
-                  className="flex-row items-center gap-1.5"
-                  style={{ transform: [{ scale: pressed ? 0.96 : 1 }] }}
-                >
-                  {selected ? <Check size={14} strokeWidth={2.5} color={rgb(palette.accent)} /> : null}
-                  <Text variant="subhead" className={selected ? "text-accent" : "text-text"}>
-                    {c.label}
-                  </Text>
-                </View>
-              )}
+              {selected ? <Icon name="check" size={16} className="text-white" /> : null}
+              <Text variant="subhead" className={selected ? "text-white" : "text-t900"}>
+                {c.label}
+              </Text>
             </Pressable>
           );
         })}

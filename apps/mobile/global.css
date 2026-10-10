@@ -3,45 +3,43 @@
 @tailwind utilities;
 
 /**
- * Semantik renk token'ları. Değerler theme/tokens.ts ile birebir aynı olmalı —
- * orası kaynak, burası NativeWind'in okuduğu kopya.
+ * Varsayılan (mor, hue 290) token değerleri — yalnızca ilk kare / SSR için.
+ * Gerçek değerler kullanıcının seçtiği ana renkten çalışma zamanında üretilir
+ * (theme/tones.ts → components/ThemeRoot.tsx) ve bunları ezer.
+ * Değişiklik gerekirse: theme/tones.ts'teki themeVars(290) çıktısıyla eşleştir.
  *
- * Kanallar boşluklu RGB olarak duruyor ki Tailwind `<alpha-value>` ile opaklık
- * uygulayabilsin (örn. bg-accent/20).
- *
- * :root = AÇIK tema. .dark:root = KOYU tema.
- * Uygulama varsayılanı koyu; bu seçim theme/theme-store.ts içinde yapılıyor.
+ * Kanallar boşluklu RGB: Tailwind `<alpha-value>` ile opaklık uygulayabilsin
+ * (örn. bg-t900/10).
  */
 @layer base {
   :root {
-    --bg: 242 246 241;
+    --t25: 246 246 255;
+    --t50: 238 236 255;
+    --t100: 224 221 255;
+    --t200: 204 198 255;
+    --t300: 179 166 255;
+    --t400: 152 132 243;
+    --t500: 124 96 219;
+    --t600: 96 68 181;
+    --t700: 68 48 129;
+    --t800: 42 30 81;
+    --t900: 20 16 36;
+    --mut: 90 88 110;
+    --mut-l: 198 196 218;
+    --line: 218 217 231;
+    --line-2: 183 181 202;
+    --bg: 246 246 255;
     --surface: 255 255 255;
-    --elevated: 255 255 255;
-    --border: 220 229 219;
-    --border-strong: 121 139 127;
-    --text: 15 23 18;
-    --text-muted: 79 97 87;
-    --accent: 11 107 73;
+    --elevated: 238 236 255;
+    --border: 218 217 231;
+    --border-strong: 183 181 202;
+    --text: 20 16 36;
+    --text-muted: 90 88 110;
+    --accent: 20 16 36;
     --on-accent: 255 255 255;
-    --warm: 138 75 18;
+    --warm: 124 96 219;
     --on-warm: 255 255 255;
     --danger: 164 35 28;
     --on-danger: 255 255 255;
-  }
-
-  .dark:root {
-    --bg: 15 23 18;
-    --surface: 26 38 32;
-    --elevated: 34 50 42;
-    --border: 44 61 52;
-    --border-strong: 90 104 95;
-    --text: 243 246 244;
-    --text-muted: 157 176 164;
-    --accent: 124 224 184;
-    --on-accent: 5 35 26;
-    --warm: 232 161 92;
-    --on-warm: 36 21 5;
-    --danger: 255 138 138;
-    --on-danger: 42 8 8;
   }
 }

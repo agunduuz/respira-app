@@ -1,6 +1,10 @@
 export { Button, type ButtonProps } from "./Button";
 export { Checkbox, type CheckboxProps } from "./Checkbox";
-export { Card, type CardProps } from "./Card";
+export { Card, toneBg, type CardProps, type Tone } from "./Card";
+export { Icon, type IconProps } from "./Icon";
+export { IconButton, type IconButtonProps } from "./IconButton";
+export { Pill, type PillProps } from "./Pill";
 export { Screen, type ScreenProps } from "./Screen";
 export { Segmented, type SegmentedProps } from "./Segmented";
 export { Text, type TextProps, type TextVariant } from "./Text";
+export { Toggle, type ToggleProps } from "./Toggle";

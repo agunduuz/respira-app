@@ -89,7 +89,7 @@ export function StepFlow({
               <Text variant="label" muted>
                 ADIM {step} / {total}
               </Text>
-              <Text variant="displayLg">{title}</Text>
+              <Text variant="headline">{title}</Text>
               {subtitle ? (
                 <Text variant="body" muted>
                   {subtitle}
@@ -100,7 +100,7 @@ export function StepFlow({
           </Animated.View>
         </ScrollView>
 
-        <View className="gap-3 border-t border-border px-5 pt-3 pb-4">
+        <View className="gap-3 px-5 pb-4 pt-3">
           {error ? (
             <Text variant="bodySm" className="text-danger" accessibilityLiveRegion="polite">
               {error}

@@ -35,9 +35,9 @@ export default function SignInScreen() {
   const [info, setInfo] = useState<string | null>(null);
 
   const inputClass =
-    "flex-1 py-3 pr-4 text-body text-text font-body";
+    "flex-1 py-3 pr-4 text-body text-t900 font-bodySemiBold";
   const fieldClass =
-    "flex-row items-center gap-2 rounded-md border border-border-strong bg-surface pl-4";
+    "flex-row items-center gap-2 rounded-[22px] border-[1.5px] border-line bg-white pl-4";
 
   function switchMode(next: Mode) {
     setMode(next);
@@ -102,7 +102,7 @@ export default function SignInScreen() {
         <View className="items-center gap-4">
           <BrandMark color={rgb(palette.accent)} />
           <View className="items-center gap-1">
-            <Text variant="displayLg">Respira</Text>
+            <Text variant="headline">Respira</Text>
             <Text variant="bodySm" muted className="text-center">
               Ekran başında geçen günü daha sağlıklı geçirmenin yolu.
             </Text>
@@ -111,7 +111,7 @@ export default function SignInScreen() {
 
         <Segmented className="mt-8" options={MODE_OPTIONS} value={mode} onChange={switchMode} />
 
-        <Card className="mt-4 gap-4">
+        <Card className="mt-4 gap-4 rounded-blockLg">
           <View className="gap-2">
             <Text variant="label" muted>
               E-POSTA

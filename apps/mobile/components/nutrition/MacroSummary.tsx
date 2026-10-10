@@ -23,13 +23,13 @@ export function MacroSummary({ values, basis }: Props) {
   ];
 
   return (
-    <View className="gap-3 rounded-lg border border-accent/25 bg-accent/10 p-4">
+    <View className="gap-3 rounded-card bg-t100 p-4">
       <Text variant="label" muted>
         {basis}
       </Text>
 
       <View className="flex-row items-baseline gap-2">
-        <Text variant="displayLg" className="text-accent">
+        <Text variant="displayLg" className="text-t900">
           {values.calories}
         </Text>
         <Text variant="subhead" muted>

@@ -1,13 +1,14 @@
 import "../global.css";
 
 // Alt yoldan import: paket kökünden alınca ailenin TÜM ağırlıkları bundle'a
-// giriyor (37 ttf). Böylece sadece kullandığımız 6 dosya gömülüyor.
-import { Fraunces_600SemiBold } from "@expo-google-fonts/fraunces/600SemiBold";
-import { Fraunces_700Bold } from "@expo-google-fonts/fraunces/700Bold";
-import { IBMPlexMono_500Medium } from "@expo-google-fonts/ibm-plex-mono/500Medium";
-import { Inter_400Regular } from "@expo-google-fonts/inter/400Regular";
-import { Inter_500Medium } from "@expo-google-fonts/inter/500Medium";
-import { Inter_600SemiBold } from "@expo-google-fonts/inter/600SemiBold";
+// giriyor. Böylece sadece kullandığımız dosyalar gömülüyor.
+import { MaterialSymbolsRounded_400Regular } from "@expo-google-fonts/material-symbols-rounded/400Regular";
+import { Urbanist_400Regular } from "@expo-google-fonts/urbanist/400Regular";
+import { Urbanist_500Medium } from "@expo-google-fonts/urbanist/500Medium";
+import { Urbanist_600SemiBold } from "@expo-google-fonts/urbanist/600SemiBold";
+import { Urbanist_700Bold } from "@expo-google-fonts/urbanist/700Bold";
+import { Urbanist_800ExtraBold } from "@expo-google-fonts/urbanist/800ExtraBold";
+import { Urbanist_900Black } from "@expo-google-fonts/urbanist/900Black";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useFonts } from "expo-font";
 import { Stack, ThemeProvider } from "expo-router";
@@ -24,9 +25,10 @@ import { initAuth } from "@/lib/auth-store";
 import { useDailyModulesStore } from "@/lib/daily-modules-store";
 import { loadSkia } from "@/lib/skia-loader";
 import { useWelcomeStore } from "@/lib/welcome-store";
-import { RouteFeatureTint } from "@/theme/feature-theme";
-import { initTheme, useIsDark, useThemeStore } from "@/theme/theme-store";
-import { darkPalette, lightPalette } from "@/theme/tokens";
+import { ThemeRoot } from "@/components/ThemeRoot";
+import { useHueStore } from "@/theme/hue-store";
+import { initTheme, useThemeStore } from "@/theme/theme-store";
+import { rgb, usePalette } from "@/theme/use-palette";
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -59,12 +61,13 @@ export default function RootLayout() {
   }, []);
 
   const [loaded, error] = useFonts({
-    Fraunces_600SemiBold,
-    Fraunces_700Bold,
-    Inter_400Regular,
-    Inter_500Medium,
-    Inter_600SemiBold,
-    IBMPlexMono_500Medium,
+    Urbanist_400Regular,
+    Urbanist_500Medium,
+    Urbanist_600SemiBold,
+    Urbanist_700Bold,
+    Urbanist_800ExtraBold,
+    Urbanist_900Black,
+    MaterialSymbolsRounded_400Regular,
   });
 
   useEffect(() => {
@@ -86,13 +89,16 @@ export default function RootLayout() {
   useEffect(() => {
     void useDailyModulesStore.getState().hydrate();
   }, []);
-  // Kayıtlı tema tercihini oku; okunana kadar çizmiyoruz ki açık→koyu yanıp sönmesi olmasın.
+  // Kayıtlı tema tercihini ve ana rengi oku; okunana kadar çizmiyoruz ki
+  // varsayılan renkten seçilene sıçrama (yanıp sönme) olmasın.
   const themeHydrated = useThemeStore((s) => s.hydrated);
+  const hueHydrated = useHueStore((s) => s.hydrated);
   useEffect(() => {
     void useThemeStore.getState().hydrate();
+    void useHueStore.getState().hydrate();
   }, []);
 
-  if (!loaded || !skiaReady || !themeHydrated) {
+  if (!loaded || !skiaReady || !themeHydrated || !hueHydrated) {
     return null;
   }
 
@@ -100,14 +106,12 @@ export default function RootLayout() {
 }
 
 function RootLayoutNav() {
-  const isDark = useIsDark();
-  const palette = isDark ? darkPalette : lightPalette;
+  const palette = usePalette();
 
   // Navigasyon kabuğu (başlık, kart arka planı) NativeWind sınıflarını değil
-  // JS renklerini okuduğu için token'ları buraya hex olarak geçiriyoruz.
-  const rgb = (channels: string) => `rgb(${channels.split(" ").join(", ")})`;
+  // JS renklerini okuduğu için token'ları buraya geçiriyoruz.
   const navTheme = {
-    dark: isDark,
+    dark: false,
     colors: {
       primary: rgb(palette.accent),
       background: rgb(palette.bg),
@@ -117,10 +121,10 @@ function RootLayoutNav() {
       notification: rgb(palette.warm),
     },
     fonts: {
-      regular: { fontFamily: "Inter_400Regular", fontWeight: "400" as const },
-      medium: { fontFamily: "Inter_500Medium", fontWeight: "500" as const },
-      bold: { fontFamily: "Inter_600SemiBold", fontWeight: "600" as const },
-      heavy: { fontFamily: "Fraunces_700Bold", fontWeight: "700" as const },
+      regular: { fontFamily: "Urbanist_500Medium", fontWeight: "500" as const },
+      medium: { fontFamily: "Urbanist_600SemiBold", fontWeight: "600" as const },
+      bold: { fontFamily: "Urbanist_800ExtraBold", fontWeight: "800" as const },
+      heavy: { fontFamily: "Urbanist_900Black", fontWeight: "900" as const },
     },
   };
 
@@ -135,17 +139,20 @@ function RootLayoutNav() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
         <QueryClientProvider client={queryClient}>
-          <StatusBar style={isDark ? "light" : "dark"} />
+          <StatusBar style="dark" />
           {/* ThemeProvider tab bar ve başlıkları da boyar — Stack'e tek tek
               screenOptions vermek yeterli olmaz. */}
           <ThemeProvider value={navTheme}>
+            <ThemeRoot>
             <AuthGate>
               <EyeTimerEngine />
-              <RouteFeatureTint>
               <Stack
                 screenOptions={{
                   contentStyle: { backgroundColor: rgb(palette.bg) },
-                  headerTitleStyle: { fontFamily: "Fraunces_600SemiBold" },
+                  headerStyle: { backgroundColor: rgb(palette.bg) },
+                  headerShadowVisible: false,
+                  headerTintColor: rgb(palette.t900),
+                  headerTitleStyle: { fontFamily: "Urbanist_800ExtraBold", color: rgb(palette.t900) },
                   // Route grup adları ("(tabs)" gibi) geri butonunda metin
                   // olarak sızmasın diye geri butonu sadece ok işareti gösterir.
                   headerBackButtonDisplayMode: "minimal",
@@ -164,30 +171,30 @@ function RootLayoutNav() {
                   options={{ presentation: "modal", title: "Göz molası ayarları" }}
                 />
                 <Stack.Screen name="settings" options={{ title: "Ayarlar" }} />
-                <Stack.Screen name="eye" options={{ title: "Göz molası" }} />
-                <Stack.Screen name="water" options={{ title: "Su" }} />
-                <Stack.Screen name="posture" options={{ title: "Duruş" }} />
-                <Stack.Screen name="stress" options={{ title: "Nefes" }} />
-                <Stack.Screen name="eye-analysis" options={{ title: "Göz analizi" }} />
+                <Stack.Screen name="eye" options={{ headerShown: false }} />
+                <Stack.Screen name="water" options={{ headerShown: false }} />
+                <Stack.Screen name="posture" options={{ headerShown: false }} />
+                <Stack.Screen name="stress" options={{ headerShown: false }} />
+                <Stack.Screen name="eye-analysis" options={{ headerShown: false }} />
                 <Stack.Screen name="nutrition-survey" options={{ title: "Beslenme anketi" }} />
                 <Stack.Screen name="posture-form" options={{ title: "Duruş profili" }} />
                 <Stack.Screen name="water-goal" options={{ title: "Su hedefi" }} />
                 <Stack.Screen
                   name="breathing-session"
-                  options={{ presentation: "modal", title: "Nefes egzersizi" }}
+                  options={{ presentation: "modal", headerShown: false }}
                 />
                 <Stack.Screen name="nutrition-report" options={{ title: "Beslenme raporu" }} />
                 <Stack.Screen
                   name="meal-entry"
-                  options={{ presentation: "modal", title: "Öğün ekle" }}
+                  options={{ presentation: "modal", headerShown: false }}
                 />
                 <Stack.Screen
                   name="blood-test-reminder"
                   options={{ presentation: "modal", title: "Kan tahlili hatırlatması" }}
                 />
               </Stack>
-              </RouteFeatureTint>
             </AuthGate>
+            </ThemeRoot>
           </ThemeProvider>
         </QueryClientProvider>
       </SafeAreaProvider>
